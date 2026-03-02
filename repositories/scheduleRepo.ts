@@ -13,6 +13,7 @@ import {
   deleteDoc,
   query,
   orderBy,
+  where,
   Timestamp,
   writeBatch,
   runTransaction,
@@ -201,6 +202,39 @@ export class ScheduleRepository {
   async updateDailyRecord(date: string, data: Partial<DailyRecord>): Promise<void> {
     const ref = doc(db, 'users', this.userId, 'dailyRecords', date);
     await updateDoc(ref, data as Record<string, unknown>);
+  }
+
+  /**
+   * 날짜 범위의 일별 기록 목록 조회
+   * where('date', '>=', startDate) + where('date', '<=', endDate) + orderBy('date')
+   * 단일 필드(date)를 사용하므로 Firestore 자동 단일 필드 인덱스로 처리 — 복합 인덱스 불필요.
+   */
+  async getDailyRecords(startDate: string, endDate: string): Promise<DailyRecord[]> {
+    const ref = collection(db, 'users', this.userId, 'dailyRecords');
+    const q = query(
+      ref,
+      where('date', '>=', startDate),
+      where('date', '<=', endDate),
+      orderBy('date', 'asc'),
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => toDailyRecord(d.data()));
+  }
+
+  /**
+   * 여러 날짜의 완료 기록을 병렬로 조회한다.
+   * N+1 패턴: 날짜당 1개 쿼리를 발행하지만 Promise.all()로 병렬 실행하여 지연을 최소화한다.
+   * - 주간 통계: 최대 7개 병렬 쿼리
+   * - 월간 카테고리 분류: 사용자가 "상세 보기"를 탭할 때만 호출 (자동 로드 아님)
+   */
+  async getCompletionsForDateRange(dates: string[]): Promise<Map<string, BlockCompletion[]>> {
+    const results = await Promise.all(
+      dates.map(async (date) => {
+        const completions = await this.getCompletions(date);
+        return [date, completions] as [string, BlockCompletion[]];
+      }),
+    );
+    return new Map(results);
   }
 
   // ─────────────────────────────────────────────

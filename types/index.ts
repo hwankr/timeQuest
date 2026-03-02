@@ -171,6 +171,8 @@ export interface DailyRecord {
   /** 달성률 (0~1) */
   completionRate: number;
   createdAt: Timestamp;
+  /** FULL_DAY_COMPLETION 보너스 이중 지급 방지 플래그 */
+  fullDayBonusAwarded?: boolean;
 }
 
 /**

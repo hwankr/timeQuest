@@ -3,9 +3,10 @@ import { useEffect, useRef } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { UserRepository } from '@/repositories/userRepo';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { COLORS } from '@/constants/theme';
+import { initializeNotifications, rescheduleAllNotifications } from '@/services/notification';
 
 export default function RootLayout() {
   const { isInitializing, isAuthenticated, initialize, user } = useAuthStore();
@@ -13,6 +14,7 @@ export default function RootLayout() {
   const router = useRouter();
   const initialized = useRef(false);
   const hasRouted = useRef(false);
+  const lastRescheduledRef = useRef<number>(0);
 
   // Auth 리스너 초기화 — useRef 가드로 중복 구독 방지
   useEffect(() => {
@@ -21,6 +23,35 @@ export default function RootLayout() {
     const unsubscribe = initialize();
     return unsubscribe;
   }, []);
+
+  // 알림 초기화 — 인증 완료 후 권한 요청 + 채널 생성
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+    initializeNotifications().then((granted) => {
+      if (granted) {
+        rescheduleAllNotifications(user.uid);
+      }
+    });
+  }, [isAuthenticated, user?.uid]);
+
+  // AppState 리스너 — 앱 포그라운드 복귀 시 알림 재예약 (5분 스로틀)
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+    const userId = user.uid;
+
+    const handleAppStateChange = (nextState: AppStateStatus) => {
+      if (nextState === 'active') {
+        const now = Date.now();
+        if (now - lastRescheduledRef.current >= 5 * 60 * 1000) {
+          lastRescheduledRef.current = now;
+          rescheduleAllNotifications(userId);
+        }
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription.remove();
+  }, [isAuthenticated, user?.uid]);
 
   // 라우트 가드 — Auth 상태 + 온보딩 완료 여부 체크
   useEffect(() => {

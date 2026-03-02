@@ -4,6 +4,7 @@
 import { ScheduleRepository } from '@/repositories/scheduleRepo';
 import { DailyRecord } from '@/types';
 import { getTodayDate, getDayOfWeek } from '@/utils/time';
+import { rescheduleAllNotifications } from '@/services/notification';
 
 /**
  * 오늘의 dailyRecord가 없으면 자동으로 생성한다.
@@ -47,5 +48,10 @@ export async function ensureDailyRecord(userId: string): Promise<DailyRecord> {
   const blocks = templateId !== null ? await scheduleRepo.getBlocks(templateId) : [];
 
   // 4단계: runTransaction으로 dailyRecord + completions + streak 원자적 생성
-  return scheduleRepo.ensureDailyRecordTransaction(todayDate, dayOfWeek, blocks);
+  const record = await scheduleRepo.ensureDailyRecordTransaction(todayDate, dayOfWeek, blocks);
+
+  // 5단계: 새로 생성된 경우 알림 재예약 (오늘 블록 알림 초기 설정)
+  rescheduleAllNotifications(userId);
+
+  return record;
 }

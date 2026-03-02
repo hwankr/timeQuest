@@ -16,7 +16,8 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useTemplateStore } from '@/stores/useTemplateStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import DayTemplateSelector from '@/components/DayTemplateSelector';
-import { DayOfWeek, DayTemplateMap, ScheduleTemplate } from '@/types';
+import NotificationSettingsSection from '@/components/NotificationSettingsSection';
+import { DayOfWeek, DayTemplateMap, NotificationSettings, ScheduleTemplate } from '@/types';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
 import { hapticLight } from '@/utils/haptics';
 
@@ -35,6 +36,9 @@ export default function SettingsScreen() {
   const setDefaultTemplate = useSettingsStore((state) => state.setDefaultTemplate);
   const setDayTemplate = useSettingsStore((state) => state.setDayTemplate);
   const setDayTemplateMap = useSettingsStore((state) => state.setDayTemplateMap);
+  const updateNotificationSetting = useSettingsStore((state) => state.updateNotificationSetting);
+  const updateAdvanceMinutes = useSettingsStore((state) => state.updateAdvanceMinutes);
+  const updateDNDTimes = useSettingsStore((state) => state.updateDNDTimes);
 
   // 템플릿 실시간 구독
   useEffect(() => {
@@ -107,6 +111,31 @@ export default function SettingsScreen() {
       ],
     );
   }, [userId, templates, setDayTemplateMap]);
+
+  // 알림 설정 핸들러
+  const handleNotificationToggle = useCallback(
+    (key: keyof NotificationSettings, value: NotificationSettings[keyof NotificationSettings]) => {
+      if (!userId) return;
+      updateNotificationSetting(userId, key, value);
+    },
+    [userId, updateNotificationSetting],
+  );
+
+  const handleAdvanceMinutes = useCallback(
+    (minutes: 1 | 5 | 10) => {
+      if (!userId) return;
+      updateAdvanceMinutes(userId, minutes);
+    },
+    [userId, updateAdvanceMinutes],
+  );
+
+  const handleDNDChange = useCallback(
+    (dndStart: string, dndEnd: string) => {
+      if (!userId) return;
+      updateDNDTimes(userId, dndStart, dndEnd);
+    },
+    [userId, updateDNDTimes],
+  );
 
   // 현재 기본 템플릿 이름
   const defaultTemplate = templates.find((t) => t.id === settings?.defaultTemplateId);
@@ -192,6 +221,20 @@ export default function SettingsScreen() {
             </View>
           )}
         </View>
+
+        {/* 알림 설정 섹션 */}
+        {settings?.notifications && userId && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>알림</Text>
+            <NotificationSettingsSection
+              userId={userId}
+              notifications={settings.notifications}
+              onToggle={handleNotificationToggle}
+              onAdvanceMinutesChange={handleAdvanceMinutes}
+              onDNDChange={handleDNDChange}
+            />
+          </View>
+        )}
 
         {/* 로그아웃 버튼 */}
         <View style={styles.section}>

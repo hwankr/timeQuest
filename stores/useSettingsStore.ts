@@ -1,8 +1,9 @@
 // 설정 상태 관리 — dayTemplateMap, defaultTemplateId Firestore 동기화
 import { create } from 'zustand';
-import { DayOfWeek, DayTemplateMap, UserSettings } from '@/types';
+import { DayOfWeek, DayTemplateMap, NotificationSettings, UserSettings } from '@/types';
 import { UserRepository } from '@/repositories/userRepo';
 import { hapticSuccess, hapticError } from '@/utils/haptics';
+import { rescheduleAllNotifications } from '@/services/notification';
 
 // ─────────────────────────────────────────────
 // 상태 인터페이스
@@ -21,6 +22,13 @@ interface SettingsState {
   setDefaultTemplate: (userId: string, templateId: string) => Promise<void>;
   setDayTemplate: (userId: string, day: DayOfWeek, templateId: string) => Promise<void>;
   setDayTemplateMap: (userId: string, dayTemplateMap: DayTemplateMap) => Promise<void>;
+  updateNotificationSetting: (
+    userId: string,
+    key: keyof NotificationSettings,
+    value: NotificationSettings[keyof NotificationSettings],
+  ) => Promise<void>;
+  updateAdvanceMinutes: (userId: string, minutes: 1 | 5 | 10) => Promise<void>;
+  updateDNDTimes: (userId: string, dndStart: string, dndEnd: string) => Promise<void>;
   clearError: () => void;
   reset: () => void;
 }
@@ -111,6 +119,84 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       await hapticSuccess();
     } catch (err) {
       const message = err instanceof Error ? err.message : '요일 템플릿 맵 설정에 실패했습니다';
+      set({ error: message });
+      await hapticError();
+      throw err;
+    }
+  },
+
+  /** 단일 알림 설정 필드 업데이트 → 재예약 트리거 */
+  updateNotificationSetting: async (userId, key, value) => {
+    set({ error: null });
+    try {
+      const repo = new UserRepository(userId);
+      await repo.updateUser({ [`settings.notifications.${key}`]: value } as never);
+      const current = get().settings;
+      if (current) {
+        set({
+          settings: {
+            ...current,
+            notifications: { ...current.notifications, [key]: value },
+          },
+        });
+      }
+      await hapticSuccess();
+      rescheduleAllNotifications(userId);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '알림 설정 변경에 실패했습니다';
+      set({ error: message });
+      await hapticError();
+      throw err;
+    }
+  },
+
+  /** 사전 알림 분 업데이트 */
+  updateAdvanceMinutes: async (userId, minutes) => {
+    set({ error: null });
+    try {
+      const repo = new UserRepository(userId);
+      await repo.updateUser({ 'settings.notifications.advanceMinutes': minutes } as never);
+      const current = get().settings;
+      if (current) {
+        set({
+          settings: {
+            ...current,
+            notifications: { ...current.notifications, advanceMinutes: minutes },
+          },
+        });
+      }
+      await hapticSuccess();
+      rescheduleAllNotifications(userId);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '사전 알림 설정에 실패했습니다';
+      set({ error: message });
+      await hapticError();
+      throw err;
+    }
+  },
+
+  /** 방해금지 시간 업데이트 */
+  updateDNDTimes: async (userId, dndStart, dndEnd) => {
+    set({ error: null });
+    try {
+      const repo = new UserRepository(userId);
+      await repo.updateUser({
+        'settings.notifications.dndStart': dndStart,
+        'settings.notifications.dndEnd': dndEnd,
+      } as never);
+      const current = get().settings;
+      if (current) {
+        set({
+          settings: {
+            ...current,
+            notifications: { ...current.notifications, dndStart, dndEnd },
+          },
+        });
+      }
+      await hapticSuccess();
+      rescheduleAllNotifications(userId);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '방해금지 시간 설정에 실패했습니다';
       set({ error: message });
       await hapticError();
       throw err;

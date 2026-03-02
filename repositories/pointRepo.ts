@@ -2,7 +2,7 @@
 // 모든 포인트 변경은 runTransaction으로 원자적으로 처리
 
 import { db } from '@/config/firebase';
-import { doc, runTransaction, Timestamp, increment } from 'firebase/firestore';
+import { doc, runTransaction, Timestamp, increment, updateDoc } from 'firebase/firestore';
 import { UserDocument, BlockType } from '@/types';
 import { BLOCK_TYPES } from '@/constants/blockTypes';
 import { toUserDocument } from './converters';
@@ -242,6 +242,88 @@ export class PointRepository {
         newTotal,
         penaltyApplied,
       };
+    });
+  }
+
+  /**
+   * 하루 전체 완료 보너스 지급 (FULL_DAY_COMPLETION = 30pt)
+   * useScheduleStore.completeBlock에서 completionRate === 1.0 확인 후 호출.
+   * fullDayBonusAwarded 플래그 확인은 호출자(store)가 담당한다.
+   */
+  async awardFullDayBonus(params: { date: string }): Promise<void> {
+    const { date } = params;
+    const userRef = doc(db, 'users', this.userId);
+    const dailyRef = doc(db, 'users', this.userId, 'dailyRecords', date);
+
+    await runTransaction(db, async (transaction) => {
+      const userSnap = await transaction.get(userRef);
+      if (!userSnap.exists()) {
+        throw new Error('awardFullDayBonus: 사용자 문서를 찾을 수 없습니다');
+      }
+      const userDoc = toUserDocument(userSnap.data());
+      const bonus = BONUS_POINTS.FULL_DAY_COMPLETION;
+      const newTotal = Math.max(0, userDoc.currentPoints + bonus);
+
+      transaction.update(userRef, {
+        currentPoints: newTotal,
+        totalPointsLifetime: userDoc.totalPointsLifetime + bonus,
+      });
+      transaction.update(dailyRef, {
+        totalPointsEarned: increment(bonus),
+      });
+    });
+  }
+
+  /**
+   * 블록 건너뜀 패널티 적용 (SKIP_BLOCK = -5pt)
+   * skipped: true 설정 + 포인트 차감 + dailyRecord.totalPointsEarned 차감.
+   * N+1 방지: completionRate 업데이트는 호출자(store)가 처리.
+   */
+  async applySkipPenalty(params: {
+    date: string;
+    blockId: string;
+  }): Promise<void> {
+    const { date, blockId } = params;
+    const userRef = doc(db, 'users', this.userId);
+    const completionRef = doc(
+      db,
+      'users',
+      this.userId,
+      'dailyRecords',
+      date,
+      'completions',
+      blockId,
+    );
+    const dailyRef = doc(db, 'users', this.userId, 'dailyRecords', date);
+
+    await runTransaction(db, async (transaction) => {
+      const userSnap = await transaction.get(userRef);
+      if (!userSnap.exists()) {
+        throw new Error('applySkipPenalty: 사용자 문서를 찾을 수 없습니다');
+      }
+      const completionSnap = await transaction.get(completionRef);
+      if (!completionSnap.exists()) {
+        throw new Error(`applySkipPenalty: 완료 기록 ${blockId}를 찾을 수 없습니다`);
+      }
+      if (completionSnap.data()?.skipped === true) {
+        // 이미 건너뜀 처리됨 — 중복 패널티 방지
+        return;
+      }
+
+      const userDoc = toUserDocument(userSnap.data());
+      const penalty = Math.abs(PENALTY.SKIP_BLOCK); // 5
+      const newPoints = Math.max(0, userDoc.currentPoints - penalty);
+
+      transaction.update(userRef, {
+        currentPoints: newPoints,
+      });
+      transaction.update(completionRef, {
+        skipped: true,
+        completed: false,
+      });
+      transaction.update(dailyRef, {
+        totalPointsEarned: increment(-penalty),
+      });
     });
   }
 }

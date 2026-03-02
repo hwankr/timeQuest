@@ -7,6 +7,7 @@ import { BlockConversionRepository } from '@/repositories/blockConversionRepo';
 import { getTodayDate, isBlockPast } from '@/utils/time';
 import { hapticSuccess, hapticError } from '@/utils/haptics';
 import { ensureDailyRecord } from '@/services/dailyRecordService';
+import { rescheduleAllNotifications } from '@/services/notification';
 
 // ─────────────────────────────────────────────
 // 블록 완료 반환 타입
@@ -162,10 +163,34 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       isPastEndTime,
     });
 
-    // 6. 햅틱 피드백 (성공)
+    // 6. completionRate 계산 및 업데이트 (post-transaction, non-transactional write)
+    // 과다 계산 방지: 실시간 리스너가 이미 반영했을 경우를 고려
+    const scheduleRepo = new ScheduleRepository(userId);
+    const currentCompletions = get().completions;
+    const alreadyReflected = currentCompletions.find((c) => c.blockId === blockId)?.completed;
+    const completedCount =
+      currentCompletions.filter((c) => c.completed).length + (alreadyReflected ? 0 : 1);
+    const newRate = Math.min(completedCount / currentCompletions.length, 1.0);
+    await scheduleRepo.updateDailyRecord(todayRecord.date, { completionRate: newRate });
+
+    // 6b. 하루 전체 완료 보너스 확인 (FULL_DAY_COMPLETION = 30pt)
+    // Firestore에서 최신 레코드를 가져와 멱등성 보장 (store의 todayRecord는 stale할 수 있음)
+    if (newRate >= 1.0) {
+      const latestRecord = await scheduleRepo.getDailyRecord(todayRecord.date);
+      if (latestRecord?.fullDayBonusAwarded !== true) {
+        await pointRepo.awardFullDayBonus({ date: todayRecord.date });
+        await scheduleRepo.updateDailyRecord(todayRecord.date, { fullDayBonusAwarded: true });
+      }
+    }
+
+    // 7. 햅틱 피드백 (성공)
     await hapticSuccess();
 
-    // 7. 상태 업데이트는 실시간 리스너(subscribeToCompletions)가 처리
+    // 8. 알림 재예약 — 완료된 블록의 알림을 제거하기 위해 재예약
+    // 프레젠테이션 계층(index.tsx)이 아닌 스토어 계층에서 호출 (아키텍처 원칙)
+    rescheduleAllNotifications(userId);
+
+    // 9. 상태 업데이트는 실시간 리스너(subscribeToCompletions)가 처리
 
     return {
       pointsEarned: result.pointsEarned,
