@@ -13,7 +13,8 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { BLOCK_TYPES } from '@/constants/blockTypes';
 import { TimeBlock, BlockType } from '@/types';
 import { TimePicker } from '@/components/TimePicker';
@@ -40,6 +41,7 @@ export function BlockFormModal({
   onSave,
   onCancel,
 }: BlockFormModalProps) {
+  const colors = useThemeColors();
   const [startTime, setStartTime] = useState(DEFAULT_START);
   const [endTime, setEndTime] = useState(DEFAULT_END);
   const [taskName, setTaskName] = useState('');
@@ -127,17 +129,17 @@ export function BlockFormModal({
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: colors.bg }]}>
           {/* 헤더 */}
-          <View style={styles.header}>
+          <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
             <TouchableOpacity onPress={onCancel} activeOpacity={0.7}>
-              <Text style={styles.cancelText}>취소</Text>
+              <Text style={[styles.cancelText, { color: colors.textSecondary }]}>취소</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
               {editingBlock ? '블록 편집' : '블록 추가'}
             </Text>
             <TouchableOpacity onPress={handleSave} activeOpacity={0.7}>
-              <Text style={styles.saveText}>저장</Text>
+              <Text style={[styles.saveText, { color: colors.primary }]}>저장</Text>
             </TouchableOpacity>
           </View>
 
@@ -148,7 +150,7 @@ export function BlockFormModal({
             keyboardShouldPersistTaps="handled"
           >
             {/* 시간 선택 */}
-            <View style={styles.timeRow}>
+            <View style={[styles.timeRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.timePickerWrapper}>
                 <TimePicker
                   label="시작 시간"
@@ -156,7 +158,7 @@ export function BlockFormModal({
                   onChange={setStartTime}
                 />
               </View>
-              <Ionicons name="arrow-forward" size={20} color={COLORS.textSecondary} style={styles.timeArrow} />
+              <Ionicons name="arrow-forward" size={20} color={colors.textSecondary} style={styles.timeArrow} />
               <View style={styles.timePickerWrapper}>
                 <TimePicker
                   label="종료 시간"
@@ -168,21 +170,21 @@ export function BlockFormModal({
             </View>
 
             {/* 블록 이름 */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>블록 이름</Text>
+            <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>블록 이름</Text>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.bg }]}
                 value={taskName}
                 onChangeText={setTaskName}
                 placeholder="예: 수학 공부, 아침 운동..."
-                placeholderTextColor={COLORS.textTertiary}
+                placeholderTextColor={colors.textTertiary}
                 maxLength={30}
                 returnKeyType="done"
               />
             </View>
 
             {/* 블록 타입 */}
-            <View style={styles.section}>
+            <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <BlockTypePicker
                 selectedType={blockType}
                 onSelect={handleTypeSelect}
@@ -190,15 +192,15 @@ export function BlockFormModal({
             </View>
 
             {/* 포인트 */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>완료 포인트 (0-999)</Text>
+            <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>완료 포인트 (0-999)</Text>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.bg }]}
                 value={points}
                 onChangeText={handlePointsChange}
                 keyboardType="number-pad"
                 placeholder="0"
-                placeholderTextColor={COLORS.textTertiary}
+                placeholderTextColor={colors.textTertiary}
                 maxLength={3}
                 returnKeyType="done"
               />
@@ -216,7 +218,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
   },
   header: {
     flexDirection: 'row',
@@ -224,23 +225,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
-    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   headerTitle: {
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
-    color: COLORS.textPrimary,
   },
   cancelText: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textSecondary,
   },
   saveText: {
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
-    color: COLORS.primary,
   },
   scroll: {
     flex: 1,
@@ -253,10 +249,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
-    borderColor: COLORS.border,
     padding: SPACING.sm,
   },
   timePickerWrapper: {
@@ -266,26 +260,20 @@ const styles = StyleSheet.create({
     marginHorizontal: SPACING.xs,
   },
   section: {
-    backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
-    borderColor: COLORS.border,
     padding: SPACING.md,
   },
   sectionLabel: {
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: COLORS.textPrimary,
     marginBottom: SPACING.sm,
   },
   textInput: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textPrimary,
     borderWidth: 1,
-    borderColor: COLORS.border,
     borderRadius: BORDER_RADIUS.sm,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.bg,
   },
 });

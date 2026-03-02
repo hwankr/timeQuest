@@ -17,10 +17,12 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useTemplateStore } from '@/stores/useTemplateStore';
 import TemplateCard from '@/components/TemplateCard';
 import { ScheduleTemplate } from '@/types';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { hapticLight } from '@/utils/haptics';
 
 export default function ScheduleTemplateScreen() {
+  const colors = useThemeColors();
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const userId = user?.uid;
@@ -130,32 +132,32 @@ export default function ScheduleTemplateScreen() {
     () => (
       <View style={styles.emptyContainer}>
         {isLoading ? (
-          <ActivityIndicator color={COLORS.primary} />
+          <ActivityIndicator color={colors.primary} />
         ) : (
           <>
-            <Ionicons name="calendar-outline" size={48} color={COLORS.textTertiary} />
-            <Text style={styles.emptyTitle}>시간표가 없습니다</Text>
-            <Text style={styles.emptySubtitle}>아래 + 버튼으로 첫 시간표를 만들어보세요</Text>
+            <Ionicons name="calendar-outline" size={48} color={colors.textTertiary} />
+            <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>시간표가 없습니다</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>아래 + 버튼으로 첫 시간표를 만들어보세요</Text>
           </>
         )}
       </View>
     ),
-    [isLoading],
+    [isLoading, colors],
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* 헤더 */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
           activeOpacity={0.7}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
+          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.title}>시간표 관리</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>시간표 관리</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -170,8 +172,8 @@ export default function ScheduleTemplateScreen() {
       />
 
       {/* FAB — 새 템플릿 생성 */}
-      <TouchableOpacity style={styles.fab} onPress={handleCreate} activeOpacity={0.8}>
-        <Ionicons name="add" size={28} color={COLORS.surface} />
+      <TouchableOpacity style={[styles.fab, { backgroundColor: colors.primary }]} onPress={handleCreate} activeOpacity={0.8}>
+        <Ionicons name="add" size={28} color={colors.surface} />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -180,14 +182,11 @@ export default function ScheduleTemplateScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
   },
@@ -198,7 +197,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: FONT_SIZE.lg,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
     textAlign: 'center',
   },
   headerRight: {
@@ -218,12 +216,10 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: COLORS.textSecondary,
     marginTop: SPACING.sm,
   },
   emptySubtitle: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textTertiary,
     textAlign: 'center',
   },
   fab: {
@@ -233,7 +229,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',

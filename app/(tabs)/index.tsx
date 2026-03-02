@@ -21,11 +21,15 @@ import { PointsBadge } from '@/components/PointsBadge';
 import { BlockConvertModal } from '@/components/BlockConvertModal';
 import { BlockCompletion } from '@/types';
 import { isCurrentBlock, isBlockPast, getTodayDate } from '@/utils/time';
-import { COLORS, SPACING, FONT_SIZE } from '@/constants/theme';
+import Animated from 'react-native-reanimated';
+import { SPACING, FONT_SIZE } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
+import { getListItemEntering } from '@/hooks/useListItemAnimation';
 
 const ITEM_HEIGHT = BLOCK_CARD_HEIGHT + SPACING.xs * 2; // card + vertical margin
 
 export default function ScheduleScreen() {
+  const colors = useThemeColors();
   const user = useAuthStore((state) => state.user);
   const {
     completions,
@@ -41,6 +45,8 @@ export default function ScheduleScreen() {
   const flatListRef = useRef<FlatList<BlockCompletion>>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showConvertModal, setShowConvertModal] = useState(false);
+  const [shouldAnimateInitialList, setShouldAnimateInitialList] = useState(true);
+  const hasMarkedInitialAnimationDoneRef = useRef(false);
 
   const todayLabel = format(new Date(), 'yyyy년 M월 d일 (EEEE)', { locale: ko });
 
@@ -71,6 +77,19 @@ export default function ScheduleScreen() {
       });
     }
   }, [completions.length, currentTime]);
+
+  // 최초 목록 렌더링 이후에는 입장 애니메이션 비활성화
+  useEffect(() => {
+    if (hasMarkedInitialAnimationDoneRef.current) return;
+    if (completions.length === 0) return;
+
+    const timer = setTimeout(() => {
+      hasMarkedInitialAnimationDoneRef.current = true;
+      setShouldAnimateInitialList(false);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [completions.length]);
 
   // 블록 완료 핸들러 — CompleteBlockResult 반환하여 BlockCard가 토스트 표시 가능
   const handleComplete = useCallback(
@@ -104,21 +123,23 @@ export default function ScheduleScreen() {
     [user, convertBlock],
   );
 
-  // FlatList 렌더 아이템
+  // FlatList 렌더 아이템 — 입장 애니메이션 포함
   const renderItem = useCallback(
-    ({ item }: ListRenderItemInfo<BlockCompletion>) => {
+    ({ item, index }: ListRenderItemInfo<BlockCompletion>) => {
       const isCurrent = isCurrentBlock(item.startTime, item.endTime, currentTime);
       const isPast = isBlockPast(item.endTime, currentTime);
       return (
-        <BlockCard
-          completion={item}
-          isCurrent={isCurrent}
-          isPast={isPast}
-          onComplete={handleComplete}
-        />
+        <Animated.View entering={getListItemEntering(index, shouldAnimateInitialList)}>
+          <BlockCard
+            completion={item}
+            isCurrent={isCurrent}
+            isPast={isPast}
+            onComplete={handleComplete}
+          />
+        </Animated.View>
       );
     },
-    [currentTime, handleComplete],
+    [currentTime, handleComplete, shouldAnimateInitialList],
   );
 
   const keyExtractor = useCallback((item: BlockCompletion) => item.blockId, []);
@@ -145,22 +166,22 @@ export default function ScheduleScreen() {
 
   if (isLoading && completions.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>일정을 불러오는 중...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>일정을 불러오는 중...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* 헤더 */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.headerLeft}>
-          <Text style={styles.dateText}>{todayLabel}</Text>
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          <Text style={[styles.dateText, { color: colors.textPrimary }]}>{todayLabel}</Text>
+          {error ? <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text> : null}
         </View>
         <PointsBadge points={userDoc?.currentPoints ?? 0} />
       </View>
@@ -179,13 +200,13 @@ export default function ScheduleScreen() {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={handleRefresh}
-            tintColor={COLORS.primary}
+            tintColor={colors.primary}
           />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>오늘 일정이 없습니다</Text>
-            <Text style={styles.emptySubText}>아래로 당겨서 새로고침하세요</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>오늘 일정이 없습니다</Text>
+            <Text style={[styles.emptySubText, { color: colors.textTertiary }]}>아래로 당겨서 새로고침하세요</Text>
           </View>
         }
       />
@@ -204,7 +225,6 @@ export default function ScheduleScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
   },
   header: {
     flexDirection: 'row',
@@ -212,9 +232,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   headerLeft: {
     flex: 1,
@@ -223,11 +241,9 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
-    color: COLORS.textPrimary,
   },
   errorText: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.error,
     marginTop: 2,
   },
   listContent: {
@@ -241,7 +257,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
   },
   emptyContainer: {
     flex: 1,
@@ -252,10 +267,8 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textSecondary,
   },
   emptySubText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textTertiary,
   },
 });

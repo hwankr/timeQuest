@@ -15,3 +15,8 @@ export async function hapticError(): Promise<void> {
 export async function hapticLight(): Promise<void> {
   await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 }
+
+/** 중간 임팩트 햅틱 — 테마 전환, 토글 등 */
+export async function hapticMedium(): Promise<void> {
+  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+}

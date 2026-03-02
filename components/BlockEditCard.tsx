@@ -2,7 +2,8 @@
 import React, { useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { BLOCK_TYPES } from '@/constants/blockTypes';
 import { TimeBlock } from '@/types';
 
@@ -23,6 +24,7 @@ export const BlockEditCard = React.memo(function BlockEditCard({
   onEdit,
   onDelete,
 }: BlockEditCardProps) {
+  const colors = useThemeColors();
   const blockTypeInfo = BLOCK_TYPES[block.blockType];
 
   const handleEdit = useCallback(() => {
@@ -34,7 +36,11 @@ export const BlockEditCard = React.memo(function BlockEditCard({
   }, [block.id, onDelete]);
 
   return (
-    <View style={[styles.container, isDragging && styles.containerDragging]}>
+    <View style={[
+      styles.container,
+      { backgroundColor: colors.surface, borderColor: colors.border },
+      isDragging && { borderColor: colors.primary, shadowColor: colors.primary },
+    ]}>
       {/* 왼쪽: 드래그 핸들 */}
       <TouchableOpacity
         style={styles.dragHandle}
@@ -42,23 +48,23 @@ export const BlockEditCard = React.memo(function BlockEditCard({
         delayLongPress={100}
         activeOpacity={0.6}
       >
-        <Ionicons name="menu" size={20} color={COLORS.textSecondary} />
+        <Ionicons name="menu" size={20} color={colors.textSecondary} />
       </TouchableOpacity>
 
       {/* 가운데: 블록 정보 */}
       <View style={styles.content}>
         <View style={styles.timeRow}>
-          <Text style={styles.timeText}>
+          <Text style={[styles.timeText, { color: colors.textPrimary }]}>
             {block.startTime} - {block.endTime}
           </Text>
         </View>
-        <Text style={styles.taskName} numberOfLines={1}>
+        <Text style={[styles.taskName, { color: colors.textPrimary }]} numberOfLines={1}>
           {block.taskName}
         </Text>
         <View style={styles.typeRow}>
           <View style={[styles.colorDot, { backgroundColor: blockTypeInfo.color }]} />
-          <Text style={styles.typeLabel}>{blockTypeInfo.label}</Text>
-          <Text style={styles.points}>+{block.basePoints}P</Text>
+          <Text style={[styles.typeLabel, { color: colors.textSecondary }]}>{blockTypeInfo.label}</Text>
+          <Text style={[styles.points, { color: colors.textSecondary }]}>+{block.basePoints}P</Text>
         </View>
       </View>
 
@@ -69,14 +75,14 @@ export const BlockEditCard = React.memo(function BlockEditCard({
           onPress={handleEdit}
           activeOpacity={0.7}
         >
-          <Ionicons name="pencil-outline" size={18} color={COLORS.primary} />
+          <Ionicons name="pencil-outline" size={18} color={colors.primary} />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={handleDelete}
           activeOpacity={0.7}
         >
-          <Ionicons name="trash-outline" size={18} color={COLORS.error} />
+          <Ionicons name="trash-outline" size={18} color={colors.error} />
         </TouchableOpacity>
       </View>
     </View>
@@ -87,17 +93,11 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
-    borderColor: COLORS.border,
     marginBottom: SPACING.sm,
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.sm,
-  },
-  containerDragging: {
-    borderColor: COLORS.primary,
-    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -121,12 +121,10 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: COLORS.textPrimary,
   },
   taskName: {
     fontSize: FONT_SIZE.md,
     fontWeight: '500',
-    color: COLORS.textPrimary,
   },
   typeRow: {
     flexDirection: 'row',
@@ -140,11 +138,9 @@ const styles = StyleSheet.create({
   },
   typeLabel: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textSecondary,
   },
   points: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textSecondary,
     marginLeft: SPACING.xs,
   },
   actionButtons: {

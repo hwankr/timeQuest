@@ -16,7 +16,8 @@ import DraggableFlatList, {
   RenderItemParams,
   ScaleDecorator,
 } from 'react-native-draggable-flatlist';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { TimeBlock } from '@/types';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useTemplateStore } from '@/stores/useTemplateStore';
@@ -25,6 +26,7 @@ import { BlockFormModal } from '@/components/BlockFormModal';
 import { hapticError } from '@/utils/haptics';
 
 export default function ScheduleCreateScreen() {
+  const colors = useThemeColors();
   const router = useRouter();
   const { templateId } = useLocalSearchParams<{ templateId?: string }>();
   const isEditMode = !!templateId;
@@ -224,43 +226,43 @@ export default function ScheduleCreateScreen() {
 
   const ListHeader = (
     <View style={styles.listHeader}>
-      <Text style={styles.sectionTitle}>블록 목록</Text>
+      <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>블록 목록</Text>
       {displayBlocks.length === 0 && (
-        <Text style={styles.emptyText}>블록을 추가해주세요</Text>
+        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>블록을 추가해주세요</Text>
       )}
     </View>
   );
 
   const ListFooter = (
     <View style={styles.listFooter}>
-      <TouchableOpacity style={styles.addButton} onPress={handleOpenAdd} activeOpacity={0.8}>
-        <Ionicons name="add" size={20} color={COLORS.surface} />
-        <Text style={styles.addButtonText}>블록 추가</Text>
+      <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.primary }]} onPress={handleOpenAdd} activeOpacity={0.8}>
+        <Ionicons name="add" size={20} color={colors.surface} />
+        <Text style={[styles.addButtonText, { color: colors.surface }]}>블록 추가</Text>
       </TouchableOpacity>
 
       {!isEditMode && (
-        <Text style={styles.infoText}>변경사항은 내일부터 적용됩니다</Text>
+        <Text style={[styles.infoText, { color: colors.textSecondary }]}>변경사항은 내일부터 적용됩니다</Text>
       )}
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* 헤더 */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
 
         {isEditMode ? (
-          <Text style={styles.headerTitle} numberOfLines={1}>시간표 편집</Text>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]} numberOfLines={1}>시간표 편집</Text>
         ) : (
           <TextInput
-            style={styles.nameInput}
+            style={[styles.nameInput, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.bg }]}
             value={templateName}
             onChangeText={setTemplateName}
             placeholder="템플릿 이름 입력..."
-            placeholderTextColor={COLORS.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             maxLength={20}
             returnKeyType="done"
           />
@@ -268,15 +270,15 @@ export default function ScheduleCreateScreen() {
 
         {!isEditMode && (
           <TouchableOpacity
-            style={[styles.saveBtn, isSaving && styles.saveBtnDisabled]}
+            style={[styles.saveBtn, { backgroundColor: colors.primary }, isSaving && styles.saveBtnDisabled]}
             onPress={handleSaveNewTemplate}
             disabled={isSaving}
             activeOpacity={0.8}
           >
             {isSaving ? (
-              <ActivityIndicator size="small" color={COLORS.surface} />
+              <ActivityIndicator size="small" color={colors.surface} />
             ) : (
-              <Text style={styles.saveBtnText}>저장</Text>
+              <Text style={[styles.saveBtnText, { color: colors.surface }]}>저장</Text>
             )}
           </TouchableOpacity>
         )}
@@ -285,7 +287,7 @@ export default function ScheduleCreateScreen() {
       {/* 블록 목록 */}
       {isLoading && isEditMode ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <DraggableFlatList
@@ -315,16 +317,13 @@ export default function ScheduleCreateScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
     gap: SPACING.sm,
   },
   backBtn: {
@@ -334,22 +333,17 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: FONT_SIZE.lg,
     fontWeight: '700',
-    color: COLORS.textPrimary,
   },
   nameInput: {
     flex: 1,
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: COLORS.textPrimary,
     borderWidth: 1,
-    borderColor: COLORS.border,
     borderRadius: BORDER_RADIUS.sm,
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
-    backgroundColor: COLORS.bg,
   },
   saveBtn: {
-    backgroundColor: COLORS.primary,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.sm,
@@ -362,7 +356,6 @@ const styles = StyleSheet.create({
   saveBtnText: {
     fontSize: FONT_SIZE.sm,
     fontWeight: '700',
-    color: COLORS.surface,
   },
   loadingContainer: {
     flex: 1,
@@ -379,12 +372,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
-    color: COLORS.textPrimary,
     marginBottom: SPACING.xs,
   },
   emptyText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: SPACING.xl,
   },
@@ -396,7 +387,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.primary,
     borderRadius: BORDER_RADIUS.md,
     paddingVertical: SPACING.md,
     gap: SPACING.xs,
@@ -404,11 +394,9 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
-    color: COLORS.surface,
   },
   infoText: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textSecondary,
     textAlign: 'center',
   },
 });

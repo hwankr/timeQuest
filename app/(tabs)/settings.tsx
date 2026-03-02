@@ -1,4 +1,4 @@
-// 설정 화면 — 계정, 시간표 관리, 로그아웃
+// 설정 화면 — 계정, 시간표 관리, 외관(다크 모드), 로그아웃
 import React, { useEffect, useCallback } from 'react';
 import {
   View,
@@ -17,11 +17,14 @@ import { useTemplateStore } from '@/stores/useTemplateStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import DayTemplateSelector from '@/components/DayTemplateSelector';
 import NotificationSettingsSection from '@/components/NotificationSettingsSection';
-import { DayOfWeek, DayTemplateMap, NotificationSettings, ScheduleTemplate } from '@/types';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
-import { hapticLight } from '@/utils/haptics';
+import { DayOfWeek, DayTemplateMap, NotificationSettings, ThemeMode } from '@/types';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors, useThemeMode } from '@/contexts/ThemeContext';
+import { hapticLight, hapticMedium } from '@/utils/haptics';
 
 export default function SettingsScreen() {
+  const colors = useThemeColors();
+  const { themeMode, setThemeMode, effectiveTheme } = useThemeMode();
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const signOut = useAuthStore((state) => state.signOut);
@@ -90,7 +93,6 @@ export default function SettingsScreen() {
       Alert.alert('안내', '평일/주말 분리를 적용하려면 시간표가 2개 이상 필요합니다.');
       return;
     }
-    // 첫 번째 템플릿 = 평일, 두 번째 템플릿 = 주말
     const weekdayTemplate = templates[0];
     const weekendTemplate = templates[1];
     const newMap: DayTemplateMap = {
@@ -137,33 +139,87 @@ export default function SettingsScreen() {
     [userId, updateDNDTimes],
   );
 
+  // 테마 모드 변경 — 중간 햅틱 (토글 전환)
+  const handleThemeMode = useCallback(
+    (mode: ThemeMode) => {
+      hapticMedium();
+      setThemeMode(mode);
+    },
+    [setThemeMode],
+  );
+
   // 현재 기본 템플릿 이름
   const defaultTemplate = templates.find((t) => t.id === settings?.defaultTemplateId);
 
+  // 테마 모드 레이블
+  const THEME_OPTIONS: { mode: ThemeMode; label: string }[] = [
+    { mode: 'system', label: '시스템 따름' },
+    { mode: 'light', label: '라이트' },
+    { mode: 'dark', label: '다크' },
+  ];
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* 헤더 */}
-        <View style={styles.header}>
-          <Text style={styles.title}>설정</Text>
+        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>설정</Text>
         </View>
 
         {/* 계정 섹션 */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>계정</Text>
-          <View style={styles.infoCard}>
-            <Text style={styles.infoLabel}>이메일</Text>
-            <Text style={styles.infoValue}>{user?.email ?? '-'}</Text>
+          <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>계정</Text>
+          <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>이메일</Text>
+            <Text style={[styles.infoValue, { color: colors.textPrimary }]}>{user?.email ?? '-'}</Text>
           </View>
+        </View>
+
+        {/* 외관 섹션 — 다크 모드 토글 */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>외관</Text>
+          <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>테마</Text>
+            <View style={styles.themeRow}>
+              {THEME_OPTIONS.map(({ mode, label }) => {
+                const isSelected = themeMode === mode;
+                return (
+                  <TouchableOpacity
+                    key={mode}
+                    style={[
+                      styles.themeOption,
+                      { borderColor: colors.border, backgroundColor: colors.bg },
+                      isSelected && { borderColor: colors.primary, backgroundColor: `${colors.primary}15` },
+                    ]}
+                    onPress={() => handleThemeMode(mode)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.themeOptionText,
+                        { color: colors.textSecondary },
+                        isSelected && { color: colors.primary, fontWeight: '700' },
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+          <Text style={[styles.themeHint, { color: colors.textTertiary }]}>
+            현재: {effectiveTheme === 'dark' ? '다크 모드' : '라이트 모드'}
+          </Text>
         </View>
 
         {/* 시간표 관리 섹션 */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>시간표 관리</Text>
+          <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>시간표 관리</Text>
 
           {/* 템플릿 관리 바로가기 */}
           <TouchableOpacity
-            style={styles.menuCard}
+            style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={() => {
               hapticLight();
               router.push('/schedule/template');
@@ -171,39 +227,39 @@ export default function SettingsScreen() {
             activeOpacity={0.7}
           >
             <View style={styles.menuCardLeft}>
-              <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
-              <Text style={styles.menuCardLabel}>시간표 목록</Text>
+              <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+              <Text style={[styles.menuCardLabel, { color: colors.textPrimary }]}>시간표 목록</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={COLORS.textTertiary} />
+            <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
           </TouchableOpacity>
 
           {/* 기본 시간표 선택 */}
           <TouchableOpacity
-            style={styles.menuCard}
+            style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={handleDefaultTemplatePick}
             activeOpacity={0.7}
             disabled={templates.length === 0}
           >
             <View style={styles.menuCardLeft}>
-              <Ionicons name="star-outline" size={20} color={COLORS.point} />
-              <Text style={styles.menuCardLabel}>기본 시간표</Text>
+              <Ionicons name="star-outline" size={20} color={colors.point} />
+              <Text style={[styles.menuCardLabel, { color: colors.textPrimary }]}>기본 시간표</Text>
             </View>
             <View style={styles.menuCardRight}>
               {isLoading ? (
-                <ActivityIndicator size="small" color={COLORS.primary} />
+                <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                <Text style={styles.menuCardValue} numberOfLines={1}>
+                <Text style={[styles.menuCardValue, { color: colors.textSecondary }]} numberOfLines={1}>
                   {defaultTemplate?.name ?? (templates.length === 0 ? '없음' : '선택 안 됨')}
                 </Text>
               )}
-              <Ionicons name="chevron-forward" size={18} color={COLORS.textTertiary} />
+              <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
             </View>
           </TouchableOpacity>
 
           {/* 요일별 시간표 배정 */}
           {settings && templates.length > 0 && (
-            <View style={styles.dayTemplateSectionCard}>
-              <Text style={styles.dayTemplateSectionTitle}>요일별 시간표 배정</Text>
+            <View style={[styles.dayTemplateSectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.dayTemplateSectionTitle, { color: colors.textSecondary }]}>요일별 시간표 배정</Text>
               <DayTemplateSelector
                 templates={templates}
                 dayTemplateMap={settings.dayTemplateMap}
@@ -215,7 +271,7 @@ export default function SettingsScreen() {
 
           {templates.length === 0 && !isLoading && (
             <View style={styles.emptyTemplateHint}>
-              <Text style={styles.emptyTemplateHintText}>
+              <Text style={[styles.emptyTemplateHintText, { color: colors.textTertiary }]}>
                 시간표를 먼저 만들면 요일별 배정이 가능합니다
               </Text>
             </View>
@@ -225,7 +281,7 @@ export default function SettingsScreen() {
         {/* 알림 설정 섹션 */}
         {settings?.notifications && userId && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>알림</Text>
+            <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>알림</Text>
             <NotificationSettingsSection
               userId={userId}
               notifications={settings.notifications}
@@ -239,11 +295,11 @@ export default function SettingsScreen() {
         {/* 로그아웃 버튼 */}
         <View style={styles.section}>
           <TouchableOpacity
-            style={styles.logoutButton}
+            style={[styles.logoutButton, { backgroundColor: colors.error }]}
             onPress={handleLogout}
             activeOpacity={0.7}
           >
-            <Text style={styles.logoutText}>로그아웃</Text>
+            <Text style={[styles.logoutText, { color: colors.surface }]}>로그아웃</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -254,55 +310,63 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
   },
   header: {
     padding: SPACING.md,
-    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   title: {
     fontSize: FONT_SIZE.xl,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
   },
   section: {
     padding: SPACING.md,
   },
   sectionLabel: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textTertiary,
     marginBottom: SPACING.sm,
     textTransform: 'uppercase',
   },
   infoCard: {
-    backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.md,
     padding: SPACING.md,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   infoLabel: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textSecondary,
+    marginBottom: SPACING.sm,
   },
   infoValue: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textPrimary,
+  },
+  themeRow: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginTop: SPACING.xs,
+  },
+  themeOption: {
+    flex: 1,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  themeOptionText: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: '500',
+  },
+  themeHint: {
+    fontSize: FONT_SIZE.xs,
+    marginTop: SPACING.xs,
+    paddingHorizontal: SPACING.xs,
   },
   menuCard: {
-    backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.md,
     padding: SPACING.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.border,
     marginBottom: SPACING.sm,
   },
   menuCardLeft: {
@@ -312,7 +376,6 @@ const styles = StyleSheet.create({
   },
   menuCardLabel: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textPrimary,
   },
   menuCardRight: {
     flexDirection: 'row',
@@ -322,21 +385,17 @@ const styles = StyleSheet.create({
   },
   menuCardValue: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
     flexShrink: 1,
   },
   dayTemplateSectionCard: {
-    backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.md,
     padding: SPACING.md,
     borderWidth: 1,
-    borderColor: COLORS.border,
     marginTop: SPACING.xs,
   },
   dayTemplateSectionTitle: {
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: COLORS.textSecondary,
     marginBottom: SPACING.sm,
   },
   emptyTemplateHint: {
@@ -345,11 +404,9 @@ const styles = StyleSheet.create({
   },
   emptyTemplateHintText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textTertiary,
     textAlign: 'center',
   },
   logoutButton: {
-    backgroundColor: COLORS.error,
     borderRadius: BORDER_RADIUS.md,
     padding: SPACING.md,
     alignItems: 'center',
@@ -357,6 +414,5 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: COLORS.surface,
   },
 });

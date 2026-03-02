@@ -12,8 +12,10 @@ import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { BlockCompletion } from '@/types';
 import { BLOCK_TYPES } from '@/constants/blockTypes';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { useCompletionAnimation } from '@/hooks/useCompletionAnimation';
+import { hapticSuccess } from '@/utils/haptics';
 import { PointsEarnedToast } from './PointsEarnedToast';
 
 export interface CompleteBlockResult {
@@ -33,6 +35,7 @@ const CARD_HEIGHT = 80;
 
 export const BlockCard = React.memo(
   function BlockCard({ completion, isCurrent, isPast, onComplete }: BlockCardProps) {
+    const colors = useThemeColors();
     const [isProcessing, setIsProcessing] = useState(false);
     const [toast, setToast] = useState<{
       points: number;
@@ -61,6 +64,7 @@ export const BlockCard = React.memo(
       try {
         const result = await onComplete(completion.blockId);
         triggerAnimation();
+        hapticSuccess();
         if (result) {
           setToast({
             points: result.pointsEarned,
@@ -80,8 +84,9 @@ export const BlockCard = React.memo(
       <TouchableOpacity
         style={[
           styles.card,
-          isCurrent && styles.cardCurrent,
-          completion.completed && styles.cardCompleted,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+          isCurrent && { borderColor: colors.primary, borderWidth: 2, shadowColor: colors.primary },
+          completion.completed && { backgroundColor: `${colors.success}08`, borderColor: `${colors.success}40` },
           isFuture && styles.cardFuture,
           isPast && !completion.completed && styles.cardPastUncompleted,
         ]}
@@ -91,11 +96,11 @@ export const BlockCard = React.memo(
       >
         {/* 왼쪽: 시간 범위 */}
         <View style={styles.timeColumn}>
-          <Text style={[styles.timeText, isFuture && styles.dimmedText]}>
+          <Text style={[styles.timeText, { color: colors.textSecondary }, isFuture && { color: colors.textTertiary }]}>
             {completion.startTime}
           </Text>
-          <View style={styles.timeDivider} />
-          <Text style={[styles.timeText, isFuture && styles.dimmedText]}>
+          <View style={[styles.timeDivider, { backgroundColor: colors.border }]} />
+          <Text style={[styles.timeText, { color: colors.textSecondary }, isFuture && { color: colors.textTertiary }]}>
             {completion.endTime}
           </Text>
         </View>
@@ -109,12 +114,13 @@ export const BlockCard = React.memo(
             <Ionicons
               name={blockInfo.icon as React.ComponentProps<typeof Ionicons>['name']}
               size={16}
-              color={isFuture ? COLORS.textTertiary : blockInfo.color}
+              color={isFuture ? colors.textTertiary : blockInfo.color}
             />
             <Text
               style={[
                 styles.taskName,
-                isFuture && styles.dimmedText,
+                { color: colors.textPrimary },
+                isFuture && { color: colors.textTertiary },
                 isPast && !completion.completed && styles.strikethrough,
               ]}
               numberOfLines={1}
@@ -122,7 +128,7 @@ export const BlockCard = React.memo(
               {completion.taskName}
             </Text>
           </View>
-          <Text style={[styles.blockTypeLabel, isFuture && styles.dimmedText]}>
+          <Text style={[styles.blockTypeLabel, { color: colors.textTertiary }]}>
             {blockInfo.label}
           </Text>
         </View>
@@ -132,15 +138,15 @@ export const BlockCard = React.memo(
           {completion.completed ? (
             // 완료 상태
             <View style={styles.completedBadge}>
-              <Ionicons name="checkmark-circle" size={22} color={COLORS.success} />
-              <Text style={styles.pointsEarned}>+{completion.pointsEarned}</Text>
+              <Ionicons name="checkmark-circle" size={22} color={colors.success} />
+              <Text style={[styles.pointsEarned, { color: colors.success }]}>+{completion.pointsEarned}</Text>
             </View>
           ) : isProcessing ? (
-            <ActivityIndicator size="small" color={COLORS.primary} />
+            <ActivityIndicator size="small" color={colors.primary} />
           ) : (
             // 미완료 상태: 기본 포인트 표시
             <View style={styles.pointsBadge}>
-              <Text style={[styles.basePoints, isFuture && styles.dimmedText]}>
+              <Text style={[styles.basePoints, { color: colors.textSecondary }, isFuture && { color: colors.textTertiary }]}>
                 {completion.basePoints}pt
               </Text>
             </View>
@@ -148,22 +154,22 @@ export const BlockCard = React.memo(
 
           {/* 전환됨 배지 */}
           {completion.converted && (
-            <View style={styles.convertedBadge}>
-              <Text style={styles.convertedText}>전환됨</Text>
+            <View style={[styles.convertedBadge, { backgroundColor: `${colors.block.free}25`, borderColor: `${colors.block.free}60` }]}>
+              <Text style={[styles.convertedText, { color: colors.block.free }]}>전환됨</Text>
             </View>
           )}
 
           {/* 지각 배지 */}
           {isLateCompleted && (
-            <View style={styles.lateBadge}>
-              <Text style={styles.lateText}>지각</Text>
+            <View style={[styles.lateBadge, { backgroundColor: `${colors.warning}25`, borderColor: `${colors.warning}60` }]}>
+              <Text style={[styles.lateText, { color: colors.warning }]}>지각</Text>
             </View>
           )}
 
           {/* 지나간 미완료 블록 경고 */}
           {isPast && !completion.completed && !isProcessing && (
-            <View style={styles.penaltyWarning}>
-              <Text style={styles.penaltyText}>-2</Text>
+            <View style={[styles.penaltyWarning, { backgroundColor: `${colors.error}20` }]}>
+              <Text style={[styles.penaltyText, { color: colors.error }]}>-2</Text>
             </View>
           )}
         </View>
@@ -198,26 +204,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: CARD_HEIGHT,
-    backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.md,
     marginHorizontal: SPACING.md,
     marginVertical: SPACING.xs,
     borderWidth: 1,
-    borderColor: COLORS.border,
     overflow: 'hidden',
   },
   cardCurrent: {
-    borderColor: COLORS.primary,
     borderWidth: 2,
-    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
-  },
-  cardCompleted: {
-    backgroundColor: `${COLORS.success}08`,
-    borderColor: `${COLORS.success}40`,
   },
   cardFuture: {
     opacity: 0.7,
@@ -233,13 +231,11 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textSecondary,
     fontVariant: ['tabular-nums'],
   },
   timeDivider: {
     width: 1,
     height: 8,
-    backgroundColor: COLORS.border,
     marginVertical: 2,
   },
   colorBar: {
@@ -263,18 +259,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: COLORS.textPrimary,
   },
   strikethrough: {
     textDecorationLine: 'line-through',
-    color: COLORS.textTertiary,
   },
   blockTypeLabel: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textTertiary,
-  },
-  dimmedText: {
-    color: COLORS.textTertiary,
   },
   rightColumn: {
     alignItems: 'center',
@@ -290,7 +280,6 @@ const styles = StyleSheet.create({
   pointsEarned: {
     fontSize: FONT_SIZE.xs,
     fontWeight: '700',
-    color: COLORS.success,
   },
   pointsBadge: {
     alignItems: 'center',
@@ -298,36 +287,28 @@ const styles = StyleSheet.create({
   basePoints: {
     fontSize: FONT_SIZE.xs,
     fontWeight: '600',
-    color: COLORS.textSecondary,
   },
   convertedBadge: {
-    backgroundColor: `${COLORS.block.free}25`,
     borderRadius: BORDER_RADIUS.sm,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderWidth: 1,
-    borderColor: `${COLORS.block.free}60`,
   },
   convertedText: {
     fontSize: 10,
     fontWeight: '700',
-    color: COLORS.block.free,
   },
   lateBadge: {
-    backgroundColor: `${COLORS.warning}25`,
     borderRadius: BORDER_RADIUS.sm,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderWidth: 1,
-    borderColor: `${COLORS.warning}60`,
   },
   lateText: {
     fontSize: 10,
     fontWeight: '700',
-    color: COLORS.warning,
   },
   penaltyWarning: {
-    backgroundColor: `${COLORS.error}20`,
     borderRadius: BORDER_RADIUS.sm,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -335,6 +316,5 @@ const styles = StyleSheet.create({
   penaltyText: {
     fontSize: 10,
     fontWeight: '700',
-    color: COLORS.error,
   },
 });

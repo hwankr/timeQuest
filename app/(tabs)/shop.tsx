@@ -1,5 +1,5 @@
 // 보상 상점 화면 — 카테고리 필터 + 보상 카드 목록 + 구매 흐름 + 커스텀 보상 CRUD + 구매 내역
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -24,11 +24,15 @@ import { PurchaseAnimation } from '@/components/PurchaseAnimation';
 import { CustomRewardModal } from '@/components/CustomRewardModal';
 import { PurchaseHistoryList } from '@/components/PurchaseHistoryList';
 import { Reward, RewardCategory } from '@/types';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import Animated from 'react-native-reanimated';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { getTodayDate } from '@/utils/time';
 import { hapticLight } from '@/utils/haptics';
+import { getListItemEntering } from '@/hooks/useListItemAnimation';
 
 export default function ShopScreen() {
+  const colors = useThemeColors();
   const user = useAuthStore((s) => s.user);
   const userId = user?.uid;
   const today = getTodayDate();
@@ -56,6 +60,8 @@ export default function ShopScreen() {
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [editingReward, setEditingReward] = useState<Reward | undefined>(undefined);
   const [refreshing, setRefreshing] = useState(false);
+  const [shouldAnimateInitialList, setShouldAnimateInitialList] = useState(true);
+  const hasMarkedInitialAnimationDoneRef = useRef(false);
 
   const currentPoints = userDoc?.currentPoints ?? 0;
 
@@ -65,6 +71,19 @@ export default function ShopScreen() {
       loadRewards(userId);
     }
   }, [userId]);
+
+  // 최초 목록 렌더링 이후에는 입장 애니메이션 비활성화
+  useEffect(() => {
+    if (hasMarkedInitialAnimationDoneRef.current) return;
+    if (rewards.length === 0) return;
+
+    const timer = setTimeout(() => {
+      hasMarkedInitialAnimationDoneRef.current = true;
+      setShouldAnimateInitialList(false);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [rewards.length]);
 
   // 카테고리 필터링
   const filteredRewards = useMemo(() => {
@@ -188,17 +207,19 @@ export default function ShopScreen() {
   );
 
   const renderReward = useCallback(
-    ({ item }: ListRenderItemInfo<Reward>) => (
-      <RewardCard
-        reward={item}
-        currentPoints={currentPoints}
-        onBuy={handleBuy}
-        onLongPress={item.isCustom ? () => handleLongPress(item) : undefined}
-        onDelete={item.isCustom ? () => handleDeleteCustomReward(item) : undefined}
-        showCustomBadge={item.isCustom}
-      />
+    ({ item, index }: ListRenderItemInfo<Reward>) => (
+      <Animated.View entering={getListItemEntering(index, shouldAnimateInitialList)}>
+        <RewardCard
+          reward={item}
+          currentPoints={currentPoints}
+          onBuy={handleBuy}
+          onLongPress={item.isCustom ? () => handleLongPress(item) : undefined}
+          onDelete={item.isCustom ? () => handleDeleteCustomReward(item) : undefined}
+          showCustomBadge={item.isCustom}
+        />
+      </Animated.View>
     ),
-    [currentPoints, handleBuy, handleLongPress, handleDeleteCustomReward],
+    [currentPoints, handleBuy, handleLongPress, handleDeleteCustomReward, shouldAnimateInitialList],
   );
 
   const keyExtractor = useCallback((item: Reward) => item.id, []);
@@ -211,7 +232,7 @@ export default function ShopScreen() {
       />
       {isLoading && rewards.length === 0 && (
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>보상 목록을 불러오는 중...</Text>
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>보상 목록을 불러오는 중...</Text>
         </View>
       )}
     </>
@@ -220,7 +241,7 @@ export default function ShopScreen() {
   const renderListFooter = () => (
     <>
       <View style={styles.historySection}>
-        <Text style={styles.sectionTitle}>오늘의 구매 내역</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>오늘의 구매 내역</Text>
         <PurchaseHistoryList
           purchases={purchases}
           onMarkUsed={handleMarkUsed}
@@ -232,23 +253,23 @@ export default function ShopScreen() {
 
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyText}>해당 카테고리의 보상이 없습니다</Text>
+      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>해당 카테고리의 보상이 없습니다</Text>
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* 헤더 */}
-      <View style={styles.header}>
-        <Text style={styles.title}>보상 상점</Text>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>보상 상점</Text>
         <View style={styles.headerRight}>
           <PointsBadge points={currentPoints} />
           <TouchableOpacity
-            style={styles.addButton}
+            style={[styles.addButton, { backgroundColor: colors.primary }]}
             onPress={handleOpenCreateModal}
             activeOpacity={0.7}
           >
-            <Ionicons name="add" size={22} color={COLORS.surface} />
+            <Ionicons name="add" size={22} color={colors.surface} />
           </TouchableOpacity>
         </View>
       </View>
@@ -266,7 +287,7 @@ export default function ShopScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={COLORS.primary}
+            tintColor={colors.primary}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -300,7 +321,6 @@ export default function ShopScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
   },
   header: {
     flexDirection: 'row',
@@ -308,14 +328,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm + 4,
-    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   title: {
     fontSize: FONT_SIZE.xl,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
   },
   headerRight: {
     flexDirection: 'row',
@@ -326,7 +343,6 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: BORDER_RADIUS.md,
-    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -339,7 +355,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -348,7 +363,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textSecondary,
   },
   historySection: {
     marginTop: SPACING.lg,
@@ -358,7 +372,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
-    color: COLORS.textPrimary,
   },
   listFooter: {
     height: SPACING.lg,

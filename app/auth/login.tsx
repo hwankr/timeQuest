@@ -12,12 +12,14 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 
 type Mode = 'login' | 'signup';
 
 export default function LoginScreen() {
-  const { signIn, signUp, clearError, isSubmitting, error } = useAuthStore();
+  const colors = useThemeColors();
+  const { signIn, signUp, signInWithGoogle, clearError, isSubmitting, error } = useAuthStore();
 
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
@@ -52,6 +54,16 @@ export default function LoginScreen() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    clearError();
+    setValidationError(null);
+    try {
+      await signInWithGoogle();
+    } catch {
+      // 에러는 useAuthStore의 error 필드에서 표시
+    }
+  };
+
   const toggleMode = () => {
     clearError();
     setValidationError(null);
@@ -61,22 +73,22 @@ export default function LoginScreen() {
   const displayError = validationError ?? error;
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.title}>TimeQuest</Text>
-            <Text style={styles.subtitle}>시간을 퀘스트처럼</Text>
+            <Text style={[styles.title, { color: colors.primary }]}>TimeQuest</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>시간을 퀘스트처럼</Text>
           </View>
 
           <View style={styles.form}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]}
               placeholder="이메일"
-              placeholderTextColor={COLORS.textTertiary}
+              placeholderTextColor={colors.textTertiary}
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
@@ -84,9 +96,9 @@ export default function LoginScreen() {
               editable={!isSubmitting}
             />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]}
               placeholder="비밀번호"
-              placeholderTextColor={COLORS.textTertiary}
+              placeholderTextColor={colors.textTertiary}
               secureTextEntry
               value={password}
               onChangeText={setPassword}
@@ -94,26 +106,44 @@ export default function LoginScreen() {
             />
 
             {displayError !== null && (
-              <Text style={styles.errorText}>{displayError}</Text>
+              <Text style={[styles.errorText, { color: colors.error }]}>{displayError}</Text>
             )}
 
             <TouchableOpacity
-              style={[styles.button, isSubmitting && styles.buttonDisabled]}
+              style={[styles.button, { backgroundColor: colors.primary }, isSubmitting && styles.buttonDisabled]}
               onPress={handleSubmit}
               disabled={isSubmitting}
               activeOpacity={0.8}
             >
               {isSubmitting ? (
-                <ActivityIndicator size="small" color={COLORS.surface} />
+                <ActivityIndicator size="small" color={colors.surface} />
               ) : (
-                <Text style={styles.buttonText}>
+                <Text style={[styles.buttonText, { color: colors.surface }]}>
                   {mode === 'login' ? '로그인' : '회원가입'}
                 </Text>
               )}
             </TouchableOpacity>
 
+            {/* 구분선 */}
+            <View style={styles.dividerRow}>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+              <Text style={[styles.dividerText, { color: colors.textTertiary }]}>또는</Text>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            </View>
+
+            {/* Google 로그인 버튼 */}
+            <TouchableOpacity
+              style={[styles.googleButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={handleGoogleSignIn}
+              disabled={isSubmitting}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.googleIcon}>G</Text>
+              <Text style={[styles.googleButtonText, { color: colors.textPrimary }]}>Google로 로그인</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity onPress={toggleMode} disabled={isSubmitting} style={styles.toggleButton}>
-              <Text style={styles.toggleText}>
+              <Text style={[styles.toggleText, { color: colors.primary }]}>
                 {mode === 'login'
                   ? '계정이 없으신가요? 회원가입'
                   : '이미 계정이 있으신가요? 로그인'}
@@ -129,7 +159,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: COLORS.bg,
   },
   flex: {
     flex: 1,
@@ -146,33 +175,26 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZE.xxl,
     fontWeight: '700',
-    color: COLORS.primary,
     marginBottom: SPACING.xs,
   },
   subtitle: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textSecondary,
   },
   form: {
     gap: SPACING.md,
   },
   input: {
-    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
     borderRadius: BORDER_RADIUS.md,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm + 4,
     fontSize: FONT_SIZE.md,
-    color: COLORS.textPrimary,
   },
   errorText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.error,
     textAlign: 'center',
   },
   button: {
-    backgroundColor: COLORS.primary,
     borderRadius: BORDER_RADIUS.md,
     paddingVertical: SPACING.sm + 4,
     alignItems: 'center',
@@ -185,7 +207,37 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: COLORS.surface,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: FONT_SIZE.sm,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.md,
+    paddingVertical: SPACING.sm + 4,
+    minHeight: 48,
+    gap: SPACING.sm,
+  },
+  googleIcon: {
+    fontSize: FONT_SIZE.lg,
+    fontWeight: '700',
+    color: '#4285F4',
+  },
+  googleButtonText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: '600',
   },
   toggleButton: {
     alignItems: 'center',
@@ -193,6 +245,5 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.primary,
   },
 });

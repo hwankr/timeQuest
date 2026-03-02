@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Reward } from '@/types';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 
 interface PurchaseConfirmModalProps {
   visible: boolean;
@@ -25,6 +26,8 @@ export function PurchaseConfirmModal({
   onConfirm,
   onCancel,
 }: PurchaseConfirmModalProps) {
+  const colors = useThemeColors();
+
   if (!reward) return null;
 
   return (
@@ -37,37 +40,37 @@ export function PurchaseConfirmModal({
       <TouchableWithoutFeedback onPress={onCancel}>
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
-            <View style={styles.container}>
+            <View style={[styles.container, { backgroundColor: colors.surface }]}>
               {/* 보상 아이콘 */}
               <Text style={styles.icon}>{reward.icon}</Text>
 
               {/* 보상 이름 */}
-              <Text style={styles.rewardName}>{reward.name}</Text>
+              <Text style={[styles.rewardName, { color: colors.textPrimary }]}>{reward.name}</Text>
 
               {/* 비용 */}
-              <View style={styles.costRow}>
-                <Ionicons name="star" size={16} color={COLORS.pointDark} />
-                <Text style={styles.cost}>{reward.cost.toLocaleString()} 포인트</Text>
+              <View style={[styles.costRow, { backgroundColor: `${colors.point}15` }]}>
+                <Ionicons name="star" size={16} color={colors.pointDark} />
+                <Text style={[styles.cost, { color: colors.pointDark }]}>{reward.cost.toLocaleString()} 포인트</Text>
               </View>
 
               {/* 확인 문구 */}
-              <Text style={styles.confirmText}>정말 구매하시겠습니까?</Text>
+              <Text style={[styles.confirmText, { color: colors.textSecondary }]}>정말 구매하시겠습니까?</Text>
 
               {/* 버튼 영역 */}
               <View style={styles.buttonRow}>
                 <TouchableOpacity
-                  style={[styles.button, styles.cancelButton]}
+                  style={[styles.button, { backgroundColor: colors.border }]}
                   onPress={onCancel}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.cancelButtonText}>취소</Text>
+                  <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>취소</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.button, styles.confirmButton]}
+                  style={[styles.button, { backgroundColor: colors.primary }]}
                   onPress={onConfirm}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.confirmButtonText}>구매</Text>
+                  <Text style={[styles.confirmButtonText, { color: colors.surface }]}>구매</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -87,7 +90,6 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
   },
   container: {
-    backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.lg,
     width: '100%',
@@ -101,14 +103,12 @@ const styles = StyleSheet.create({
   rewardName: {
     fontSize: FONT_SIZE.lg,
     fontWeight: '700',
-    color: COLORS.textPrimary,
     textAlign: 'center',
   },
   costRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.xs,
-    backgroundColor: `${COLORS.point}15`,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.xl,
@@ -116,11 +116,9 @@ const styles = StyleSheet.create({
   cost: {
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
-    color: COLORS.pointDark,
   },
   confirmText: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textSecondary,
     marginTop: SPACING.xs,
     marginBottom: SPACING.sm,
   },
@@ -136,20 +134,12 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.md,
     alignItems: 'center',
   },
-  cancelButton: {
-    backgroundColor: COLORS.border,
-  },
-  confirmButton: {
-    backgroundColor: COLORS.primary,
-  },
   cancelButtonText: {
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
-    color: COLORS.textSecondary,
   },
   confirmButtonText: {
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
-    color: COLORS.surface,
   },
 });

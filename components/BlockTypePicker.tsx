@@ -9,7 +9,8 @@ import {
   ListRenderItemInfo,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { BLOCK_TYPES, BlockTypeInfo } from '@/constants/blockTypes';
 import { BlockType } from '@/types';
 
@@ -29,10 +30,12 @@ function BlockTypeItem({
   isSelected: boolean;
   onSelect: (type: BlockType) => void;
 }) {
+  const colors = useThemeColors();
   return (
     <TouchableOpacity
       style={[
         styles.typeItem,
+        { backgroundColor: colors.surface, borderColor: colors.border },
         isSelected && { backgroundColor: item.color + '33', borderColor: item.color, borderWidth: 2 },
       ]}
       onPress={() => onSelect(item.type)}
@@ -41,12 +44,12 @@ function BlockTypeItem({
       <Ionicons
         name={item.icon as React.ComponentProps<typeof Ionicons>['name']}
         size={20}
-        color={isSelected ? item.color : COLORS.textSecondary}
+        color={isSelected ? item.color : colors.textSecondary}
       />
-      <Text style={[styles.typeLabel, isSelected && { color: item.color, fontWeight: '700' }]}>
+      <Text style={[styles.typeLabel, { color: colors.textSecondary }, isSelected && { color: item.color, fontWeight: '700' }]}>
         {item.label}
       </Text>
-      <Text style={[styles.typePoints, isSelected && { color: item.color }]}>
+      <Text style={[styles.typePoints, { color: colors.textTertiary }, isSelected && { color: item.color }]}>
         {item.defaultPoints > 0 ? `+${item.defaultPoints}` : '0'}P
       </Text>
     </TouchableOpacity>
@@ -57,6 +60,7 @@ export const BlockTypePicker = React.memo(function BlockTypePicker({
   selectedType,
   onSelect,
 }: BlockTypePickerProps) {
+  const colors = useThemeColors();
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<BlockTypeInfo>) => (
       <BlockTypeItem
@@ -70,7 +74,7 @@ export const BlockTypePicker = React.memo(function BlockTypePicker({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>블록 타입</Text>
+      <Text style={[styles.label, { color: colors.textPrimary }]}>블록 타입</Text>
       <FlatList
         data={BLOCK_TYPE_LIST}
         keyExtractor={(item) => item.type}
@@ -90,7 +94,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: COLORS.textPrimary,
     marginBottom: SPACING.sm,
   },
   listContent: {
@@ -101,21 +104,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
-    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
     minWidth: 72,
     gap: SPACING.xs,
   },
   typeLabel: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textSecondary,
     fontWeight: '500',
     textAlign: 'center',
   },
   typePoints: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textTertiary,
     textAlign: 'center',
   },
 });

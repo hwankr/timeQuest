@@ -1,4 +1,4 @@
-// 블록 완료 애니메이션 훅 — Reanimated 기반 스케일 + 플래시 애니메이션
+// 블록 완료 애니메이션 훅 — Reanimated 기반 bounce + glow 강화
 import {
   useSharedValue,
   useAnimatedStyle,
@@ -21,16 +21,18 @@ export function useCompletionAnimation() {
 
   /** 완료 애니메이션 트리거 — 블록 카드 탭 시 호출 */
   function triggerAnimation(): void {
-    // 1. 스케일 1.05로 확대 (spring)
-    // 2. 플래시 성공 초록 (opacity pulse)
-    // 3. 원래 크기로 복귀 (spring)
+    // bounce: 1 → 1.08 → 0.95 → 1 (더 역동적인 느낌)
     scale.value = withSequence(
-      withSpring(1.05, { damping: 10, stiffness: 200 }),
+      withSpring(1.08, { damping: 8, stiffness: 250 }),
+      withSpring(0.95, { damping: 10, stiffness: 200 }),
       withSpring(1.0, { damping: 15, stiffness: 150 }),
     );
 
+    // success glow pulse
     flashOpacity.value = withSequence(
-      withTiming(1, { duration: 100 }),
+      withTiming(1, { duration: 80 }),
+      withTiming(0.6, { duration: 100 }),
+      withTiming(1, { duration: 80 }),
       withTiming(0, { duration: 300 }),
     );
   }

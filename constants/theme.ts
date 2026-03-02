@@ -1,7 +1,7 @@
 // 디자인 토큰 — 색상, 간격, 폰트 크기, 테두리 반경
 
-/** 앱 전역 색상 팔레트 */
-export const COLORS = {
+/** 라이트 모드 색상 팔레트 (= COLORS, 하위 호환 export 유지) */
+export const LIGHT_COLORS = {
   // 브랜드 (인디고)
   primary: '#6366f1',
   primaryLight: '#818cf8',
@@ -65,3 +65,6 @@ export const BORDER_RADIUS = {
   lg: 16,
   xl: 24,
 };
+
+/** 하위 호환 — blockTypes.ts 등 비-컴포넌트 파일에서 계속 사용 */
+export const COLORS = LIGHT_COLORS;

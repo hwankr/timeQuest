@@ -7,9 +7,17 @@ import {
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithCredential,
   User,
 } from 'firebase/auth';
 import { auth } from '@/config/firebase';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import {
+  isGoogleSignInCancelledError,
+  getGoogleErrorMessage,
+  getGoogleConfigErrorMessage,
+} from '@/services/googleAuth';
 
 interface AuthState {
   user: User | null;
@@ -25,6 +33,7 @@ interface AuthState {
   initialize: () => () => void;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   clearError: () => void;
 }
@@ -74,6 +83,35 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
+  signInWithGoogle: async () => {
+    set({ isSubmitting: true, error: null });
+    try {
+      const googleConfigError = getGoogleConfigErrorMessage();
+      if (googleConfigError) {
+        set({ error: googleConfigError });
+        return;
+      }
+
+      await GoogleSignin.hasPlayServices();
+      const signInResult = await GoogleSignin.signIn();
+      const idToken = signInResult.data?.idToken;
+      if (!idToken) {
+        throw Object.assign(new Error('Google ID 토큰을 받지 못했습니다'), {
+          code: 'auth/invalid-credential',
+        });
+      }
+      const credential = GoogleAuthProvider.credential(idToken);
+      await signInWithCredential(auth, credential);
+    } catch (error) {
+      // 사용자 취소는 에러가 아님
+      if (isGoogleSignInCancelledError(error)) return;
+      set({ error: getGoogleErrorMessage(error) });
+      throw error;
+    } finally {
+      set({ isSubmitting: false });
+    }
+  },
+
   signOut: async () => {
     await firebaseSignOut(auth);
   },
@@ -102,6 +140,8 @@ function getErrorMessage(error: unknown): string {
         return '너무 많은 시도가 있었습니다. 잠시 후 다시 시도해주세요';
       case 'auth/invalid-credential':
         return '이메일 또는 비밀번호가 올바르지 않습니다';
+      case 'auth/account-exists-with-different-credential':
+        return '이 이메일은 다른 로그인 방식으로 등록되어 있습니다. 기존 방식으로 로그인해주세요';
       default:
         return '인증 오류가 발생했습니다. 다시 시도해주세요';
     }

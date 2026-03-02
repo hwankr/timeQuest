@@ -1,5 +1,5 @@
-// 포인트 획득 토스트 — 블록 완료 후 획득 포인트를 잠시 표시
-import React, { useEffect } from 'react';
+// 포인트 획득 토스트 — 블록 완료 후 획득 포인트를 잠시 표시 + 숫자 카운트업
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -8,7 +8,7 @@ import Animated, {
   withSequence,
   runOnJS,
 } from 'react-native-reanimated';
-import { COLORS } from '@/constants/theme';
+import { useThemeColors, useThemeMode } from '@/contexts/ThemeContext';
 
 interface PointsEarnedToastProps {
   points: number;
@@ -18,6 +18,15 @@ interface PointsEarnedToastProps {
   onDismiss: () => void;
 }
 
+function toHexWithAlpha(hex: string, alpha: number): string {
+  const normalizedHex = hex.replace('#', '');
+  const safeAlpha = Math.max(0, Math.min(1, alpha));
+  const alphaHex = Math.round(safeAlpha * 255)
+    .toString(16)
+    .padStart(2, '0');
+  return `#${normalizedHex}${alphaHex}`;
+}
+
 export function PointsEarnedToast({
   points,
   bonusPoints,
@@ -25,8 +34,13 @@ export function PointsEarnedToast({
   visible,
   onDismiss,
 }: PointsEarnedToastProps) {
+  const colors = useThemeColors();
+  const { effectiveTheme } = useThemeMode();
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(20);
+
+  // 카운트업 상태 — JS 스레드에서 업데이트
+  const [displayPoints, setDisplayPoints] = useState(0);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -35,6 +49,17 @@ export function PointsEarnedToast({
 
   useEffect(() => {
     if (visible) {
+      // 카운트업: 0 → points (600ms, 60fps ≈ 36 프레임)
+      setDisplayPoints(0);
+      const steps = 20;
+      const interval = 600 / steps;
+      let step = 0;
+      const id = setInterval(() => {
+        step += 1;
+        setDisplayPoints(Math.round((points * step) / steps));
+        if (step >= steps) clearInterval(id);
+      }, interval);
+
       // 슬라이드 업 + 페이드 인
       opacity.value = withTiming(1, { duration: 200 });
       translateY.value = withTiming(0, { duration: 200 });
@@ -49,24 +74,30 @@ export function PointsEarnedToast({
         setTimeout(() => runOnJS(onDismiss)(), 300);
       }, 2000);
 
-      return () => clearTimeout(timer);
+      return () => {
+        clearInterval(id);
+        clearTimeout(timer);
+      };
     } else {
       opacity.value = withTiming(0, { duration: 200 });
       translateY.value = withTiming(20, { duration: 200 });
+      setDisplayPoints(0);
     }
   }, [visible]);
 
   if (!visible && opacity.value === 0) return null;
 
+  const toastBg = toHexWithAlpha(colors.surface, effectiveTheme === 'dark' ? 0.92 : 0.88);
+
   return (
     <Animated.View style={[styles.container, animatedStyle]} pointerEvents="none">
-      <View style={styles.toast}>
-        <Text style={styles.pointsText}>+{points} pts</Text>
+      <View style={[styles.toast, { backgroundColor: toastBg }]}>
+        <Text style={[styles.pointsText, { color: colors.point }]}>+{displayPoints} pts</Text>
         {bonusPoints > 0 && (
-          <Text style={styles.bonusText}>+{bonusPoints} 보너스!</Text>
+          <Text style={[styles.bonusText, { color: colors.success }]}>+{bonusPoints} 보너스!</Text>
         )}
         {penaltyApplied > 0 && (
-          <Text style={styles.penaltyText}>-{penaltyApplied} 지각 패널티</Text>
+          <Text style={[styles.penaltyText, { color: colors.error }]}>-{penaltyApplied} 지각 패널티</Text>
         )}
       </View>
     </Animated.View>
@@ -83,7 +114,6 @@ const styles = StyleSheet.create({
     zIndex: 999,
   },
   toast: {
-    backgroundColor: 'rgba(0,0,0,0.85)',
     borderRadius: 12,
     paddingHorizontal: 20,
     paddingVertical: 12,
@@ -91,17 +121,14 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   pointsText: {
-    color: '#FFD700',
     fontSize: 22,
     fontWeight: 'bold',
   },
   bonusText: {
-    color: '#4CAF50',
     fontSize: 14,
     fontWeight: '600',
   },
   penaltyText: {
-    color: '#FF5252',
     fontSize: 14,
     fontWeight: '600',
   },

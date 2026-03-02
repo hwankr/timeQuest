@@ -1,6 +1,6 @@
 // 설정 상태 관리 — dayTemplateMap, defaultTemplateId Firestore 동기화
 import { create } from 'zustand';
-import { DayOfWeek, DayTemplateMap, NotificationSettings, UserSettings } from '@/types';
+import { DayOfWeek, DayTemplateMap, NotificationSettings, ThemeMode, UserSettings } from '@/types';
 import { UserRepository } from '@/repositories/userRepo';
 import { hapticSuccess, hapticError } from '@/utils/haptics';
 import { rescheduleAllNotifications } from '@/services/notification';
@@ -29,6 +29,7 @@ interface SettingsState {
   ) => Promise<void>;
   updateAdvanceMinutes: (userId: string, minutes: 1 | 5 | 10) => Promise<void>;
   updateDNDTimes: (userId: string, dndStart: string, dndEnd: string) => Promise<void>;
+  setThemeMode: (userId: string, mode: ThemeMode) => Promise<void>;
   clearError: () => void;
   reset: () => void;
 }
@@ -197,6 +198,25 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       rescheduleAllNotifications(userId);
     } catch (err) {
       const message = err instanceof Error ? err.message : '방해금지 시간 설정에 실패했습니다';
+      set({ error: message });
+      await hapticError();
+      throw err;
+    }
+  },
+
+  /** 테마 모드 설정 — Firestore user.settings.themeMode 업데이트 */
+  setThemeMode: async (userId: string, mode: ThemeMode) => {
+    set({ error: null });
+    try {
+      const repo = new UserRepository(userId);
+      await repo.updateUser({ 'settings.themeMode': mode } as never);
+      const current = get().settings;
+      if (current) {
+        set({ settings: { ...current, themeMode: mode } });
+      }
+      await hapticSuccess();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '테마 설정에 실패했습니다';
       set({ error: message });
       await hapticError();
       throw err;

@@ -3,7 +3,9 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
+import { hapticLight } from '@/utils/haptics';
 
 interface FeatureItem {
   icon: keyof typeof Ionicons.glyphMap;
@@ -17,19 +19,20 @@ const FEATURES: FeatureItem[] = [
 ];
 
 export default function OnboardingWelcomeScreen() {
+  const colors = useThemeColors();
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
       <View style={styles.content}>
         {/* 앱 아이콘 영역 */}
-        <View style={styles.iconWrapper}>
-          <Ionicons name="hourglass-outline" size={72} color={COLORS.primary} />
+        <View style={[styles.iconWrapper, { backgroundColor: `${colors.primary}15` }]}>
+          <Ionicons name="hourglass-outline" size={72} color={colors.primary} />
         </View>
 
         {/* 제목 */}
-        <Text style={styles.title}>TimeQuest에 오신 것을{'\n'}환영합니다!</Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>TimeQuest에 오신 것을{'\n'}환영합니다!</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           시간을 퀘스트처럼 관리하고 보상을 획득하세요
         </Text>
 
@@ -37,10 +40,10 @@ export default function OnboardingWelcomeScreen() {
         <View style={styles.featureList}>
           {FEATURES.map((feature, index) => (
             <View key={index} style={styles.featureItem}>
-              <View style={styles.featureIconWrapper}>
-                <Ionicons name={feature.icon} size={22} color={COLORS.primary} />
+              <View style={[styles.featureIconWrapper, { backgroundColor: `${colors.primary}15` }]}>
+                <Ionicons name={feature.icon} size={22} color={colors.primary} />
               </View>
-              <Text style={styles.featureText}>{feature.text}</Text>
+              <Text style={[styles.featureText, { color: colors.textPrimary }]}>{feature.text}</Text>
             </View>
           ))}
         </View>
@@ -49,12 +52,15 @@ export default function OnboardingWelcomeScreen() {
       {/* 시작 버튼 */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={styles.startButton}
-          onPress={() => router.push('/onboarding/time-setup')}
+          style={[styles.startButton, { backgroundColor: colors.primary }]}
+          onPress={() => {
+            hapticLight();
+            router.push('/onboarding/time-setup');
+          }}
           activeOpacity={0.8}
         >
-          <Text style={styles.startButtonText}>시작하기</Text>
-          <Ionicons name="arrow-forward" size={20} color={COLORS.surface} />
+          <Text style={[styles.startButtonText, { color: colors.surface }]}>시작하기</Text>
+          <Ionicons name="arrow-forward" size={20} color={colors.surface} />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -64,7 +70,6 @@ export default function OnboardingWelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
   },
   content: {
     flex: 1,
@@ -76,7 +81,6 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: `${COLORS.primary}15`,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.xl,
@@ -84,14 +88,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZE.xxl,
     fontWeight: '800',
-    color: COLORS.textPrimary,
     textAlign: 'center',
     lineHeight: 40,
     marginBottom: SPACING.md,
   },
   subtitle: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: SPACING.xl,
@@ -109,14 +111,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: BORDER_RADIUS.sm,
-    backgroundColor: `${COLORS.primary}15`,
     justifyContent: 'center',
     alignItems: 'center',
   },
   featureText: {
     flex: 1,
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textPrimary,
     lineHeight: 22,
   },
   footer: {
@@ -126,7 +126,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.primary,
     borderRadius: BORDER_RADIUS.lg,
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.xl,
@@ -135,6 +134,5 @@ const styles = StyleSheet.create({
   startButtonText: {
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
-    color: COLORS.surface,
   },
 });

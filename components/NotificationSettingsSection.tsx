@@ -9,7 +9,8 @@ import {
   Alert,
 } from 'react-native';
 import { NotificationSettings } from '@/types';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { hapticLight } from '@/utils/haptics';
 
 // ─────────────────────────────────────────────
@@ -51,6 +52,7 @@ export default function NotificationSettingsSection({
   onAdvanceMinutesChange,
   onDNDChange,
 }: Props) {
+  const colors = useThemeColors();
   const [localDndStart, setLocalDndStart] = useState(notifications.dndStart);
   const [localDndEnd, setLocalDndEnd] = useState(notifications.dndEnd);
 
@@ -111,74 +113,75 @@ export default function NotificationSettingsSection({
   }, [localDndStart, onDNDChange]);
 
   return (
-    <View style={styles.section}>
-      <Text style={styles.sectionLabel}>알림 설정</Text>
+    <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>알림 설정</Text>
 
       {/* 블록 시작 알림 */}
-      <View style={styles.toggleRow}>
-        <Text style={styles.toggleLabel}>블록 시작 알림</Text>
+      <View style={[styles.toggleRow, { borderTopColor: colors.border }]}>
+        <Text style={[styles.toggleLabel, { color: colors.textPrimary }]}>블록 시작 알림</Text>
         <Switch
           value={notifications.blockStart}
           onValueChange={(v) => handleToggle('blockStart', v)}
-          trackColor={{ false: COLORS.border, true: COLORS.primary }}
-          thumbColor={COLORS.surface}
+          trackColor={{ false: colors.border, true: colors.primary }}
+          thumbColor={colors.surface}
         />
       </View>
 
       {/* 블록 종료 알림 */}
-      <View style={styles.toggleRow}>
-        <Text style={styles.toggleLabel}>블록 종료 알림</Text>
+      <View style={[styles.toggleRow, { borderTopColor: colors.border }]}>
+        <Text style={[styles.toggleLabel, { color: colors.textPrimary }]}>블록 종료 알림</Text>
         <Switch
           value={notifications.blockEnd}
           onValueChange={(v) => handleToggle('blockEnd', v)}
-          trackColor={{ false: COLORS.border, true: COLORS.primary }}
-          thumbColor={COLORS.surface}
+          trackColor={{ false: colors.border, true: colors.primary }}
+          thumbColor={colors.surface}
         />
       </View>
 
       {/* 완료 리마인더 */}
-      <View style={styles.toggleRow}>
-        <Text style={styles.toggleLabel}>완료 리마인더</Text>
+      <View style={[styles.toggleRow, { borderTopColor: colors.border }]}>
+        <Text style={[styles.toggleLabel, { color: colors.textPrimary }]}>완료 리마인더</Text>
         <Switch
           value={notifications.reminder}
           onValueChange={(v) => handleToggle('reminder', v)}
-          trackColor={{ false: COLORS.border, true: COLORS.primary }}
-          thumbColor={COLORS.surface}
+          trackColor={{ false: colors.border, true: colors.primary }}
+          thumbColor={colors.surface}
         />
       </View>
 
       {/* 아침 브리핑 */}
-      <View style={styles.toggleRow}>
-        <Text style={styles.toggleLabel}>아침 브리핑</Text>
+      <View style={[styles.toggleRow, { borderTopColor: colors.border }]}>
+        <Text style={[styles.toggleLabel, { color: colors.textPrimary }]}>아침 브리핑</Text>
         <Switch
           value={notifications.morningBriefing}
           onValueChange={(v) => handleToggle('morningBriefing', v)}
-          trackColor={{ false: COLORS.border, true: COLORS.primary }}
-          thumbColor={COLORS.surface}
+          trackColor={{ false: colors.border, true: colors.primary }}
+          thumbColor={colors.surface}
         />
       </View>
 
       {/* 스트릭 경고 */}
-      <View style={[styles.toggleRow, styles.lastToggleRow]}>
-        <Text style={styles.toggleLabel}>스트릭 경고</Text>
+      <View style={[styles.toggleRow, styles.lastToggleRow, { borderTopColor: colors.border }]}>
+        <Text style={[styles.toggleLabel, { color: colors.textPrimary }]}>스트릭 경고</Text>
         <Switch
           value={notifications.streakWarning}
           onValueChange={(v) => handleToggle('streakWarning', v)}
-          trackColor={{ false: COLORS.border, true: COLORS.primary }}
-          thumbColor={COLORS.surface}
+          trackColor={{ false: colors.border, true: colors.primary }}
+          thumbColor={colors.surface}
         />
       </View>
 
       {/* 사전 알림 분 */}
-      <View style={styles.subSection}>
-        <Text style={styles.subSectionLabel}>블록 시작 사전 알림</Text>
+      <View style={[styles.subSection, { borderTopColor: colors.border }]}>
+        <Text style={[styles.subSectionLabel, { color: colors.textSecondary }]}>블록 시작 사전 알림</Text>
         <View style={styles.segmentedControl}>
           {ADVANCE_OPTIONS.map((opt) => (
             <TouchableOpacity
               key={opt}
               style={[
                 styles.segmentButton,
-                notifications.advanceMinutes === opt && styles.segmentButtonActive,
+                { borderColor: colors.border, backgroundColor: colors.bg },
+                notifications.advanceMinutes === opt && { backgroundColor: colors.primary, borderColor: colors.primary },
               ]}
               onPress={() => handleAdvanceMinutes(opt)}
               activeOpacity={0.7}
@@ -186,7 +189,8 @@ export default function NotificationSettingsSection({
               <Text
                 style={[
                   styles.segmentButtonText,
-                  notifications.advanceMinutes === opt && styles.segmentButtonTextActive,
+                  { color: colors.textSecondary },
+                  notifications.advanceMinutes === opt && { color: colors.surface, fontWeight: '600' },
                 ]}
               >
                 {opt}분
@@ -197,17 +201,17 @@ export default function NotificationSettingsSection({
       </View>
 
       {/* 방해금지 시간 */}
-      <View style={styles.subSection}>
-        <Text style={styles.subSectionLabel}>방해금지 시간</Text>
+      <View style={[styles.subSection, { borderTopColor: colors.border }]}>
+        <Text style={[styles.subSectionLabel, { color: colors.textSecondary }]}>방해금지 시간</Text>
         <View style={styles.dndRow}>
-          <TouchableOpacity style={styles.dndButton} onPress={handleDndStartPick} activeOpacity={0.7}>
-            <Text style={styles.dndLabel}>시작</Text>
-            <Text style={styles.dndValue}>{localDndStart}</Text>
+          <TouchableOpacity style={[styles.dndButton, { borderColor: colors.border, backgroundColor: colors.bg }]} onPress={handleDndStartPick} activeOpacity={0.7}>
+            <Text style={[styles.dndLabel, { color: colors.textSecondary }]}>시작</Text>
+            <Text style={[styles.dndValue, { color: colors.textPrimary }]}>{localDndStart}</Text>
           </TouchableOpacity>
-          <Text style={styles.dndSeparator}>—</Text>
-          <TouchableOpacity style={styles.dndButton} onPress={handleDndEndPick} activeOpacity={0.7}>
-            <Text style={styles.dndLabel}>종료</Text>
-            <Text style={styles.dndValue}>{localDndEnd}</Text>
+          <Text style={[styles.dndSeparator, { color: colors.textTertiary }]}>—</Text>
+          <TouchableOpacity style={[styles.dndButton, { borderColor: colors.border, backgroundColor: colors.bg }]} onPress={handleDndEndPick} activeOpacity={0.7}>
+            <Text style={[styles.dndLabel, { color: colors.textSecondary }]}>종료</Text>
+            <Text style={[styles.dndValue, { color: colors.textPrimary }]}>{localDndEnd}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -221,16 +225,13 @@ export default function NotificationSettingsSection({
 
 const styles = StyleSheet.create({
   section: {
-    backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
-    borderColor: COLORS.border,
     overflow: 'hidden',
   },
   sectionLabel: {
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: COLORS.textSecondary,
     paddingHorizontal: SPACING.md,
     paddingTop: SPACING.md,
     paddingBottom: SPACING.sm,
@@ -242,25 +243,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
   },
   lastToggleRow: {
     marginBottom: SPACING.xs,
   },
   toggleLabel: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textPrimary,
   },
   subSection: {
     paddingHorizontal: SPACING.md,
     paddingTop: SPACING.sm,
     paddingBottom: SPACING.md,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
   },
   subSectionLabel: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
     marginBottom: SPACING.sm,
   },
   segmentedControl: {
@@ -272,21 +269,10 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.sm,
     borderWidth: 1,
-    borderColor: COLORS.border,
     alignItems: 'center',
-    backgroundColor: COLORS.bg,
-  },
-  segmentButtonActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
   },
   segmentButtonText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
-  },
-  segmentButtonTextActive: {
-    color: COLORS.surface,
-    fontWeight: '600',
   },
   dndRow: {
     flexDirection: 'row',
@@ -302,20 +288,15 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.sm,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.bg,
   },
   dndLabel: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
   },
   dndValue: {
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: COLORS.textPrimary,
   },
   dndSeparator: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textTertiary,
   },
 });

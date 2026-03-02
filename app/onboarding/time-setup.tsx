@@ -15,10 +15,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useOnboardingStore } from '@/stores/useOnboardingStore';
 import { TimePicker } from '@/components/TimePicker';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
+import { hapticSuccess } from '@/utils/haptics';
 import { parseTime } from '@/utils/time';
 
 export default function TimeSetupScreen() {
+  const colors = useThemeColors();
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const {
@@ -60,6 +63,7 @@ export default function TimeSetupScreen() {
 
     try {
       await completeOnboarding(user.uid, user.email ?? '');
+      hapticSuccess();
       // 온보딩 완료 후 메인 탭으로 이동
       router.replace('/(tabs)');
     } catch {
@@ -70,24 +74,24 @@ export default function TimeSetupScreen() {
   const displayError = localError ?? error;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* 헤더 */}
         <View style={styles.header}>
-          <Text style={styles.title}>하루 일정 설정</Text>
-          <Text style={styles.subtitle}>기상 시간과 취침 시간을 설정해주세요</Text>
-          <Text style={styles.hint}>설정한 시간을 기반으로 하루 블록이 자동 생성됩니다</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>하루 일정 설정</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>기상 시간과 취침 시간을 설정해주세요</Text>
+          <Text style={[styles.hint, { color: colors.textTertiary }]}>설정한 시간을 기반으로 하루 블록이 자동 생성됩니다</Text>
         </View>
 
         {/* 시간 선택 영역 */}
-        <View style={styles.pickersContainer}>
+        <View style={[styles.pickersContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <TimePicker
             label="기상 시간"
             value={wakeUpTime}
             onChange={handleWakeUpChange}
           />
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           <TimePicker
             label="취침 시간"
@@ -99,18 +103,18 @@ export default function TimeSetupScreen() {
 
         {/* 에러 메시지 */}
         {displayError ? (
-          <View style={styles.errorBox}>
-            <Ionicons name="alert-circle-outline" size={18} color={COLORS.error} />
-            <Text style={styles.errorText}>{displayError}</Text>
+          <View style={[styles.errorBox, { backgroundColor: `${colors.error}15` }]}>
+            <Ionicons name="alert-circle-outline" size={18} color={colors.error} />
+            <Text style={[styles.errorText, { color: colors.error }]}>{displayError}</Text>
           </View>
         ) : null}
 
         {/* 로딩 상태 */}
         {isCreating ? (
           <View style={styles.loadingBox}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loadingText}>일정을 생성하는 중입니다...</Text>
-            <Text style={styles.loadingSubText}>잠시만 기다려주세요</Text>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.textPrimary }]}>일정을 생성하는 중입니다...</Text>
+            <Text style={[styles.loadingSubText, { color: colors.textSecondary }]}>잠시만 기다려주세요</Text>
           </View>
         ) : null}
       </ScrollView>
@@ -118,27 +122,27 @@ export default function TimeSetupScreen() {
       {/* 하단 버튼 */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, { borderColor: colors.border, backgroundColor: colors.surface }]}
           onPress={() => router.back()}
           activeOpacity={0.7}
           disabled={isCreating}
         >
-          <Ionicons name="arrow-back" size={20} color={COLORS.textSecondary} />
-          <Text style={styles.backButtonText}>이전</Text>
+          <Ionicons name="arrow-back" size={20} color={colors.textSecondary} />
+          <Text style={[styles.backButtonText, { color: colors.textSecondary }]}>이전</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.completeButton, isCreating && styles.completeButtonDisabled]}
+          style={[styles.completeButton, { backgroundColor: colors.primary }, isCreating && styles.completeButtonDisabled]}
           onPress={handleComplete}
           activeOpacity={0.8}
           disabled={isCreating}
         >
           {isCreating ? (
-            <ActivityIndicator size="small" color={COLORS.surface} />
+            <ActivityIndicator size="small" color={colors.surface} />
           ) : (
             <>
-              <Text style={styles.completeButtonText}>완료</Text>
-              <Ionicons name="checkmark" size={20} color={COLORS.surface} />
+              <Text style={[styles.completeButtonText, { color: colors.surface }]}>완료</Text>
+              <Ionicons name="checkmark" size={20} color={colors.surface} />
             </>
           )}
         </TouchableOpacity>
@@ -150,7 +154,6 @@ export default function TimeSetupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
   },
   scrollContent: {
     flexGrow: 1,
@@ -164,38 +167,31 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZE.xxl,
     fontWeight: '800',
-    color: COLORS.textPrimary,
     marginBottom: SPACING.sm,
   },
   subtitle: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textSecondary,
     lineHeight: 24,
     marginBottom: SPACING.xs,
   },
   hint: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textTertiary,
     lineHeight: 20,
   },
   pickersContainer: {
-    backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.xl,
     borderWidth: 1,
-    borderColor: COLORS.border,
     overflow: 'hidden',
     marginBottom: SPACING.lg,
   },
   divider: {
     height: 1,
-    backgroundColor: COLORS.border,
     marginHorizontal: SPACING.md,
   },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
-    backgroundColor: `${COLORS.error}15`,
     borderRadius: BORDER_RADIUS.md,
     padding: SPACING.md,
     marginBottom: SPACING.md,
@@ -203,7 +199,6 @@ const styles = StyleSheet.create({
   errorText: {
     flex: 1,
     fontSize: FONT_SIZE.sm,
-    color: COLORS.error,
     lineHeight: 20,
   },
   loadingBox: {
@@ -214,11 +209,9 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: COLORS.textPrimary,
   },
   loadingSubText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
   },
   footer: {
     flexDirection: 'row',
@@ -234,12 +227,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.surface,
   },
   backButtonText: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textSecondary,
   },
   completeButton: {
     flex: 1,
@@ -247,7 +237,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: SPACING.sm,
-    backgroundColor: COLORS.primary,
     borderRadius: BORDER_RADIUS.lg,
     paddingVertical: SPACING.md,
   },
@@ -257,6 +246,5 @@ const styles = StyleSheet.create({
   completeButtonText: {
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
-    color: COLORS.surface,
   },
 });

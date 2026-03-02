@@ -15,7 +15,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { BlockCompletion } from '@/types';
 import { BLOCK_TYPES } from '@/constants/blockTypes';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { hapticSuccess, hapticError, hapticLight } from '@/utils/haptics';
 
 interface BlockConvertModalProps {
@@ -31,6 +32,7 @@ export function BlockConvertModal({
   onConvert,
   onClose,
 }: BlockConvertModalProps) {
+  const colors = useThemeColors();
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [isConverting, setIsConverting] = useState(false);
 
@@ -93,7 +95,11 @@ export function BlockConvertModal({
 
       return (
         <TouchableOpacity
-          style={[styles.blockItem, isSelected && styles.blockItemSelected]}
+          style={[
+            styles.blockItem,
+            { backgroundColor: colors.bg, borderColor: colors.border },
+            isSelected && { borderColor: colors.primary, borderWidth: 2, backgroundColor: `${colors.primary}08` },
+          ]}
           onPress={() => handleSelectBlock(item.blockId)}
           activeOpacity={0.7}
         >
@@ -105,21 +111,21 @@ export function BlockConvertModal({
                 size={16}
                 color={blockInfo.color}
               />
-              <Text style={styles.blockName} numberOfLines={1}>
+              <Text style={[styles.blockName, { color: colors.textPrimary }]} numberOfLines={1}>
                 {item.taskName}
               </Text>
             </View>
-            <Text style={styles.blockMeta}>
+            <Text style={[styles.blockMeta, { color: colors.textSecondary }]}>
               {item.startTime} ~ {item.endTime} · {blockInfo.label}
             </Text>
           </View>
           {isSelected && (
-            <Ionicons name="checkmark-circle" size={22} color={COLORS.primary} />
+            <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
           )}
         </TouchableOpacity>
       );
     },
-    [selectedBlockId, handleSelectBlock],
+    [selectedBlockId, handleSelectBlock, colors],
   );
 
   const keyExtractor = useCallback((item: BlockCompletion) => item.blockId, []);
@@ -129,24 +135,24 @@ export function BlockConvertModal({
       <TouchableWithoutFeedback onPress={handleClose}>
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
-            <View style={styles.container}>
+            <View style={[styles.container, { backgroundColor: colors.surface }]}>
               {/* 헤더 */}
               <View style={styles.header}>
-                <Text style={styles.title}>블록 전환</Text>
+                <Text style={[styles.title, { color: colors.textPrimary }]}>블록 전환</Text>
                 <TouchableOpacity onPress={handleClose} disabled={isConverting}>
-                  <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+                  <Ionicons name="close" size={24} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.subtitle}>
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
                 공부/운동 블록을 자유 블록으로 전환합니다
               </Text>
 
               {/* 전환 가능한 블록 목록 */}
               {convertibleBlocks.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>전환 가능한 블록이 없습니다</Text>
-                  <Text style={styles.emptySubText}>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>전환 가능한 블록이 없습니다</Text>
+                  <Text style={[styles.emptySubText, { color: colors.textTertiary }]}>
                     미완료된 공부/운동 블록이 있어야 전환할 수 있습니다
                   </Text>
                 </View>
@@ -166,16 +172,17 @@ export function BlockConvertModal({
                 <TouchableOpacity
                   style={[
                     styles.convertButton,
-                    (!selectedBlockId || isConverting) && styles.convertButtonDisabled,
+                    { backgroundColor: colors.primary },
+                    (!selectedBlockId || isConverting) && { backgroundColor: colors.border },
                   ]}
                   onPress={handleConfirmConvert}
                   disabled={!selectedBlockId || isConverting}
                   activeOpacity={0.7}
                 >
                   {isConverting ? (
-                    <ActivityIndicator size="small" color={COLORS.surface} />
+                    <ActivityIndicator size="small" color={colors.surface} />
                   ) : (
-                    <Text style={styles.convertButtonText}>
+                    <Text style={[styles.convertButtonText, { color: colors.surface }]}>
                       {selectedBlockId ? '전환하기' : '블록을 선택하세요'}
                     </Text>
                   )}
@@ -196,7 +203,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: COLORS.surface,
     borderTopLeftRadius: BORDER_RADIUS.xl,
     borderTopRightRadius: BORDER_RADIUS.xl,
     paddingTop: SPACING.md,
@@ -213,11 +219,9 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZE.lg,
     fontWeight: '700',
-    color: COLORS.textPrimary,
   },
   subtitle: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
     paddingHorizontal: SPACING.md,
     marginBottom: SPACING.sm,
   },
@@ -231,18 +235,11 @@ const styles = StyleSheet.create({
   blockItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.bg,
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
-    borderColor: COLORS.border,
     overflow: 'hidden',
     gap: SPACING.sm,
     paddingRight: SPACING.sm,
-  },
-  blockItemSelected: {
-    borderColor: COLORS.primary,
-    borderWidth: 2,
-    backgroundColor: `${COLORS.primary}08`,
   },
   blockColorBar: {
     width: 4,
@@ -262,11 +259,9 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: COLORS.textPrimary,
   },
   blockMeta: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textSecondary,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -277,11 +272,9 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: COLORS.textSecondary,
   },
   emptySubText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textTertiary,
     textAlign: 'center',
   },
   convertButton: {
@@ -289,15 +282,10 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
     paddingVertical: SPACING.sm + 4,
     borderRadius: BORDER_RADIUS.md,
-    backgroundColor: COLORS.primary,
     alignItems: 'center',
-  },
-  convertButtonDisabled: {
-    backgroundColor: COLORS.border,
   },
   convertButtonText: {
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
-    color: COLORS.surface,
   },
 });

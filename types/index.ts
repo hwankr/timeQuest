@@ -24,6 +24,9 @@ export type RewardCategory = 'activity' | 'convert' | 'food' | 'rest' | 'special
 /** 요일 (7가지) */
 export type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 
+/** 테마 모드 — 시스템 따름 / 라이트 / 다크 */
+export type ThemeMode = 'system' | 'light' | 'dark';
+
 // ─────────────────────────────────────────────
 // UserDocument 중첩 설정 인터페이스
 // ─────────────────────────────────────────────
@@ -69,6 +72,8 @@ export interface UserSettings {
   dayTemplateMap: DayTemplateMap;
   notifications: NotificationSettings;
   points: PointSettings;
+  /** 테마 모드 — 기본값 'system' */
+  themeMode?: ThemeMode;
 }
 
 // ─────────────────────────────────────────────

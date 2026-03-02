@@ -2,7 +2,8 @@
 import React, { useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { ScheduleTemplate, DayOfWeek, DayTemplateMap } from '@/types';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { hapticLight } from '@/utils/haptics';
 
 interface DayTemplateSelectorProps {
@@ -37,18 +38,23 @@ const DayRow = React.memo(function DayRow({
   selectedTemplateId,
   onSelect,
 }: DayRowProps) {
+  const colors = useThemeColors();
   const isWeekend = dayKey === 'sat' || dayKey === 'sun';
 
   return (
     <View style={styles.dayRow}>
-      <Text style={[styles.dayLabel, isWeekend && styles.dayLabelWeekend]}>{dayLabel}</Text>
+      <Text style={[styles.dayLabel, { color: colors.textPrimary }, isWeekend && { color: colors.error }]}>{dayLabel}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.templateScroll}>
         {templates.map((t) => {
           const isSelected = t.id === selectedTemplateId;
           return (
             <TouchableOpacity
               key={t.id}
-              style={[styles.templateChip, isSelected && styles.templateChipSelected]}
+              style={[
+                styles.templateChip,
+                { backgroundColor: colors.bg, borderColor: colors.border },
+                isSelected && { backgroundColor: colors.primary, borderColor: colors.primary },
+              ]}
               onPress={() => {
                 hapticLight();
                 onSelect(dayKey, t.id);
@@ -56,7 +62,11 @@ const DayRow = React.memo(function DayRow({
               activeOpacity={0.7}
             >
               <Text
-                style={[styles.templateChipText, isSelected && styles.templateChipTextSelected]}
+                style={[
+                  styles.templateChipText,
+                  { color: colors.textSecondary },
+                  isSelected && { color: colors.surface, fontWeight: '600' },
+                ]}
                 numberOfLines={1}
               >
                 {t.name}
@@ -75,6 +85,8 @@ const DayTemplateSelector = React.memo(function DayTemplateSelector({
   onDayTemplateChange,
   onPresetWeekdayWeekend,
 }: DayTemplateSelectorProps) {
+  const colors = useThemeColors();
+
   const handleSelect = useCallback(
     (day: DayOfWeek, templateId: string) => {
       onDayTemplateChange(day, templateId);
@@ -90,15 +102,15 @@ const DayTemplateSelector = React.memo(function DayTemplateSelector({
   if (templates.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>템플릿이 없습니다. 먼저 템플릿을 만들어주세요.</Text>
+        <Text style={[styles.emptyText, { color: colors.textTertiary }]}>템플릿이 없습니다. 먼저 템플릿을 만들어주세요.</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.presetButton} onPress={handlePreset} activeOpacity={0.7}>
-        <Text style={styles.presetButtonText}>평일/주말 분리 적용</Text>
+      <TouchableOpacity style={[styles.presetButton, { backgroundColor: colors.primaryLight }]} onPress={handlePreset} activeOpacity={0.7}>
+        <Text style={[styles.presetButtonText, { color: colors.surface }]}>평일/주말 분리 적용</Text>
       </TouchableOpacity>
 
       {DAY_LABELS.map(({ key, label }) => (
@@ -127,11 +139,9 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textTertiary,
     textAlign: 'center',
   },
   presetButton: {
-    backgroundColor: COLORS.primaryLight,
     borderRadius: BORDER_RADIUS.md,
     padding: SPACING.sm,
     alignItems: 'center',
@@ -140,7 +150,6 @@ const styles = StyleSheet.create({
   presetButtonText: {
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: COLORS.surface,
   },
   dayRow: {
     flexDirection: 'row',
@@ -150,37 +159,22 @@ const styles = StyleSheet.create({
   dayLabel: {
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: COLORS.textPrimary,
     width: 28,
     textAlign: 'center',
-  },
-  dayLabelWeekend: {
-    color: COLORS.error,
   },
   templateScroll: {
     flex: 1,
     marginLeft: SPACING.sm,
   },
   templateChip: {
-    backgroundColor: COLORS.bg,
     borderRadius: BORDER_RADIUS.sm,
     borderWidth: 1,
-    borderColor: COLORS.border,
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
     marginRight: SPACING.xs,
     maxWidth: 120,
   },
-  templateChipSelected: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
   templateChipText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
-  },
-  templateChipTextSelected: {
-    color: COLORS.surface,
-    fontWeight: '600',
   },
 });

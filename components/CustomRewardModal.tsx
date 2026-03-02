@@ -14,7 +14,8 @@ import {
   Platform,
 } from 'react-native';
 import { Reward, RewardCategory } from '@/types';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { hapticLight } from '@/utils/haptics';
 
 // ─────────────────────────────────────────────
@@ -56,6 +57,7 @@ export function CustomRewardModal({
   onSave,
   editingReward,
 }: CustomRewardModalProps) {
+  const colors = useThemeColors();
   const isEditing = !!editingReward;
 
   const [name, setName] = useState('');
@@ -141,15 +143,15 @@ export function CustomRewardModal({
           <View style={styles.overlay} />
         </TouchableWithoutFeedback>
 
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: colors.surface }]}>
           {/* 헤더 */}
-          <View style={styles.header}>
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <TouchableOpacity onPress={onClose} disabled={isSaving} style={styles.headerButton}>
-              <Text style={styles.cancelText}>취소</Text>
+              <Text style={[styles.cancelText, { color: colors.textSecondary }]}>취소</Text>
             </TouchableOpacity>
-            <Text style={styles.title}>{isEditing ? '보상 수정' : '보상 추가'}</Text>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>{isEditing ? '보상 수정' : '보상 추가'}</Text>
             <TouchableOpacity onPress={handleSave} disabled={isSaving} style={styles.headerButton}>
-              <Text style={[styles.saveText, isSaving && styles.saveTextDisabled]}>
+              <Text style={[styles.saveText, { color: colors.primary }, isSaving && { color: colors.textTertiary }]}>
                 {isSaving ? '저장 중...' : '저장'}
               </Text>
             </TouchableOpacity>
@@ -164,9 +166,9 @@ export function CustomRewardModal({
             {/* 아이콘 + 이름 행 */}
             <View style={styles.row}>
               <View style={styles.iconInputWrapper}>
-                <Text style={styles.fieldLabel}>아이콘</Text>
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>아이콘</Text>
                 <TextInput
-                  style={styles.iconInput}
+                  style={[styles.iconInput, { borderColor: colors.border, backgroundColor: colors.bg }]}
                   value={icon}
                   onChangeText={setIcon}
                   maxLength={2}
@@ -175,28 +177,28 @@ export function CustomRewardModal({
                 />
               </View>
               <View style={styles.nameWrapper}>
-                <Text style={styles.fieldLabel}>
-                  이름 <Text style={styles.required}>*</Text>
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
+                  이름 <Text style={[styles.required, { color: colors.error }]}>*</Text>
                 </Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.bg }]}
                   value={name}
                   onChangeText={setName}
                   placeholder="보상 이름 (최대 20자)"
                   maxLength={20}
                   returnKeyType="next"
                 />
-                <Text style={styles.charCount}>{name.length}/20</Text>
+                <Text style={[styles.charCount, { color: colors.textTertiary }]}>{name.length}/20</Text>
               </View>
             </View>
 
             {/* 포인트 비용 */}
             <View style={styles.field}>
-              <Text style={styles.fieldLabel}>
-                포인트 비용 <Text style={styles.required}>*</Text>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
+                포인트 비용 <Text style={[styles.required, { color: colors.error }]}>*</Text>
               </Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.bg }]}
                 value={cost}
                 onChangeText={setCost}
                 placeholder="최소 1 포인트"
@@ -207,9 +209,9 @@ export function CustomRewardModal({
 
             {/* 설명 */}
             <View style={styles.field}>
-              <Text style={styles.fieldLabel}>설명 (선택)</Text>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>설명 (선택)</Text>
               <TextInput
-                style={[styles.input, styles.descInput]}
+                style={[styles.input, styles.descInput, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.bg }]}
                 value={description}
                 onChangeText={setDescription}
                 placeholder="보상 설명을 입력하세요"
@@ -221,19 +223,27 @@ export function CustomRewardModal({
 
             {/* 카테고리 */}
             <View style={styles.field}>
-              <Text style={styles.fieldLabel}>카테고리</Text>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>카테고리</Text>
               <View style={styles.categoryGrid}>
                 {CATEGORY_OPTIONS.map((opt) => {
                   const isSelected = opt.key === category;
                   return (
                     <TouchableOpacity
                       key={opt.key}
-                      style={[styles.categoryChip, isSelected && styles.categoryChipSelected]}
+                      style={[
+                        styles.categoryChip,
+                        { backgroundColor: colors.border },
+                        isSelected && { backgroundColor: `${colors.primary}15`, borderColor: colors.primary },
+                      ]}
                       onPress={() => handleSelectCategory(opt.key)}
                       activeOpacity={0.7}
                     >
                       <Text style={styles.categoryChipIcon}>{opt.icon}</Text>
-                      <Text style={[styles.categoryChipLabel, isSelected && styles.categoryChipLabelSelected]}>
+                      <Text style={[
+                        styles.categoryChipLabel,
+                        { color: colors.textSecondary },
+                        isSelected && { color: colors.primary },
+                      ]}>
                         {opt.label}
                       </Text>
                     </TouchableOpacity>
@@ -262,7 +272,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   container: {
-    backgroundColor: COLORS.surface,
     borderTopLeftRadius: BORDER_RADIUS.xl,
     borderTopRightRadius: BORDER_RADIUS.xl,
     maxHeight: '85%',
@@ -274,7 +283,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm + 4,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   headerButton: {
     minWidth: 60,
@@ -282,20 +290,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
-    color: COLORS.textPrimary,
   },
   cancelText: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textSecondary,
   },
   saveText: {
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
-    color: COLORS.primary,
     textAlign: 'right',
-  },
-  saveTextDisabled: {
-    color: COLORS.textTertiary,
   },
   scroll: {
     flexGrow: 0,
@@ -322,29 +324,21 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: COLORS.textSecondary,
     marginBottom: 2,
   },
-  required: {
-    color: COLORS.error,
-  },
+  required: {},
   input: {
     borderWidth: 1,
-    borderColor: COLORS.border,
     borderRadius: BORDER_RADIUS.md,
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs + 4,
     fontSize: FONT_SIZE.md,
-    color: COLORS.textPrimary,
-    backgroundColor: COLORS.bg,
   },
   iconInput: {
     borderWidth: 1,
-    borderColor: COLORS.border,
     borderRadius: BORDER_RADIUS.md,
     paddingVertical: SPACING.xs + 4,
     fontSize: 24,
-    backgroundColor: COLORS.bg,
     textAlign: 'center',
   },
   descInput: {
@@ -353,7 +347,6 @@ const styles = StyleSheet.create({
   },
   charCount: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textTertiary,
     textAlign: 'right',
     marginTop: 2,
   },
@@ -369,13 +362,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs + 2,
     borderRadius: BORDER_RADIUS.xl,
-    backgroundColor: COLORS.border,
     borderWidth: 1.5,
     borderColor: 'transparent',
-  },
-  categoryChipSelected: {
-    backgroundColor: `${COLORS.primary}15`,
-    borderColor: COLORS.primary,
   },
   categoryChipIcon: {
     fontSize: 16,
@@ -383,9 +371,5 @@ const styles = StyleSheet.create({
   categoryChipLabel: {
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  categoryChipLabelSelected: {
-    color: COLORS.primary,
   },
 });

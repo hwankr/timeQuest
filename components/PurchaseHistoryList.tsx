@@ -9,7 +9,8 @@ import {
   ListRenderItemInfo,
 } from 'react-native';
 import { RewardPurchase } from '@/types';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 
 // ─────────────────────────────────────────────
 // 헬퍼
@@ -45,6 +46,7 @@ interface PurchaseItemProps {
 }
 
 const PurchaseItem = React.memo(function PurchaseItem({ purchase, onMarkUsed }: PurchaseItemProps) {
+  const colors = useThemeColors();
   const handlePress = useCallback(() => {
     if (!purchase.used) {
       onMarkUsed(purchase.id);
@@ -52,30 +54,38 @@ const PurchaseItem = React.memo(function PurchaseItem({ purchase, onMarkUsed }: 
   }, [purchase.id, purchase.used, onMarkUsed]);
 
   return (
-    <View style={styles.item}>
+    <View style={[styles.item, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       {/* 아이콘 */}
       <Text style={styles.itemIcon}>{purchase.rewardIcon}</Text>
 
       {/* 정보 */}
       <View style={styles.itemInfo}>
-        <Text style={styles.itemName} numberOfLines={1}>
+        <Text style={[styles.itemName, { color: colors.textPrimary }]} numberOfLines={1}>
           {purchase.rewardName}
         </Text>
         <View style={styles.itemMeta}>
-          <Text style={styles.itemCost}>⭐ {purchase.pointsSpent}</Text>
-          <Text style={styles.itemDot}>·</Text>
-          <Text style={styles.itemTime}>{formatPurchaseTime(purchase)}</Text>
+          <Text style={[styles.itemCost, { color: colors.pointDark }]}>⭐ {purchase.pointsSpent}</Text>
+          <Text style={[styles.itemDot, { color: colors.textTertiary }]}>·</Text>
+          <Text style={[styles.itemTime, { color: colors.textSecondary }]}>{formatPurchaseTime(purchase)}</Text>
         </View>
       </View>
 
       {/* 사용 버튼 */}
       <TouchableOpacity
-        style={[styles.useButton, purchase.used && styles.useButtonUsed]}
+        style={[
+          styles.useButton,
+          { backgroundColor: colors.primary },
+          purchase.used && { backgroundColor: colors.border },
+        ]}
         onPress={handlePress}
         disabled={purchase.used}
         activeOpacity={0.7}
       >
-        <Text style={[styles.useButtonText, purchase.used && styles.useButtonTextUsed]}>
+        <Text style={[
+          styles.useButtonText,
+          { color: colors.surface },
+          purchase.used && { color: colors.textSecondary },
+        ]}>
           {purchase.used ? '사용됨' : '사용'}
         </Text>
       </TouchableOpacity>
@@ -88,6 +98,7 @@ const PurchaseItem = React.memo(function PurchaseItem({ purchase, onMarkUsed }: 
 // ─────────────────────────────────────────────
 
 export function PurchaseHistoryList({ purchases, onMarkUsed }: PurchaseHistoryListProps) {
+  const colors = useThemeColors();
   // purchasedAt 내림차순 정렬
   const sorted = [...purchases].sort((a, b) => {
     const aMs = typeof (a.purchasedAt as { toMillis?: () => number }).toMillis === 'function'
@@ -111,7 +122,7 @@ export function PurchaseHistoryList({ purchases, onMarkUsed }: PurchaseHistoryLi
   if (sorted.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>오늘 구매한 보상이 없습니다</Text>
+        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>오늘 구매한 보상이 없습니다</Text>
       </View>
     );
   }
@@ -138,11 +149,9 @@ const styles = StyleSheet.create({
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.md,
     padding: SPACING.sm,
     borderWidth: 1,
-    borderColor: COLORS.border,
     gap: SPACING.sm,
   },
   itemIcon: {
@@ -157,7 +166,6 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: COLORS.textPrimary,
   },
   itemMeta: {
     flexDirection: 'row',
@@ -166,35 +174,24 @@ const styles = StyleSheet.create({
   },
   itemCost: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.pointDark,
     fontWeight: '600',
   },
   itemDot: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textTertiary,
   },
   itemTime: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textSecondary,
   },
   useButton: {
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.sm,
-    backgroundColor: COLORS.primary,
     minWidth: 52,
     alignItems: 'center',
-  },
-  useButtonUsed: {
-    backgroundColor: COLORS.border,
   },
   useButtonText: {
     fontSize: FONT_SIZE.xs,
     fontWeight: '700',
-    color: COLORS.surface,
-  },
-  useButtonTextUsed: {
-    color: COLORS.textSecondary,
   },
   emptyContainer: {
     paddingVertical: SPACING.md,
@@ -202,6 +199,5 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
   },
 });

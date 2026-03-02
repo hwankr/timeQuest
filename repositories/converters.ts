@@ -13,6 +13,7 @@ import {
   BlockType,
   RewardCategory,
   UserSettings,
+  ThemeMode,
 } from '@/types';
 
 // ─────────────────────────────────────────────
@@ -49,6 +50,7 @@ const DEFAULT_SETTINGS: UserSettings = {
     lateToleranceMinutes: 5,
     streakBonusMultiplier: 0.1,
   },
+  themeMode: 'system' as ThemeMode,
 };
 
 // ─────────────────────────────────────────────

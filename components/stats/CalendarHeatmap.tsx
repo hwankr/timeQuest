@@ -1,9 +1,11 @@
 // 월간 캘린더 히트맵 — 달성률에 따라 색상으로 표시
 // 순수 RN View 컴포넌트 (차트 라이브러리 불필요)
 import React, { memo, useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors, useThemeMode } from '@/contexts/ThemeContext';
 import { getTodayDate } from '@/utils/time';
+import { hapticLight } from '@/utils/haptics';
 import { startOfMonth, getDay } from 'date-fns';
 
 interface DayData {
@@ -20,18 +22,21 @@ interface CalendarHeatmapProps {
 const DAY_HEADERS = ['월', '화', '수', '목', '금', '토', '일'];
 
 /** 달성률에 따라 셀 배경색 반환 */
-function getRateColor(rate: number): string {
-  if (rate === 0) return COLORS.border;
-  if (rate <= 0.25) return '#fee2e2'; // 연한 빨강
-  if (rate <= 0.5) return '#fef3c7';  // 연한 노랑
-  if (rate <= 0.75) return '#d1fae5'; // 연한 초록
-  return COLORS.success;              // 강한 초록
+function getRateColor(rate: number, borderColor: string, successColor: string, isDark: boolean): string {
+  if (rate === 0) return borderColor;
+  if (rate <= 0.25) return isDark ? 'rgba(239,68,68,0.15)' : '#fee2e2'; // 연한 빨강
+  if (rate <= 0.5) return isDark ? 'rgba(245,158,11,0.15)' : '#fef3c7';  // 연한 노랑
+  if (rate <= 0.75) return isDark ? 'rgba(34,197,94,0.2)' : '#d1fae5'; // 연한 초록
+  return successColor;              // 강한 초록
 }
 
 export const CalendarHeatmap = memo(function CalendarHeatmap({
   dailyRates,
   month,
 }: CalendarHeatmapProps) {
+  const colors = useThemeColors();
+  const { effectiveTheme } = useThemeMode();
+  const isDark = effectiveTheme === 'dark';
   const today = getTodayDate();
   const rateMap = useMemo(
     () => new Map<string, number>(dailyRates.map((d) => [d.date, d.completionRate])),
@@ -86,7 +91,7 @@ export const CalendarHeatmap = memo(function CalendarHeatmap({
       <View style={styles.row}>
         {DAY_HEADERS.map((header) => (
           <View key={header} style={styles.headerCell}>
-            <Text style={styles.headerText}>{header}</Text>
+            <Text style={[styles.headerText, { color: colors.textSecondary }]}>{header}</Text>
           </View>
         ))}
       </View>
@@ -101,22 +106,24 @@ export const CalendarHeatmap = memo(function CalendarHeatmap({
             const rate = rateMap.get(cell.date) ?? 0;
             const isToday = cell.date === today;
             const isFuture = cell.date > today;
-            const bgColor = isFuture ? 'transparent' : getRateColor(rate);
+            const bgColor = isFuture ? 'transparent' : getRateColor(rate, colors.border, colors.success, isDark);
 
             return (
-              <View
+              <TouchableOpacity
                 key={cell.date}
+                activeOpacity={0.7}
+                onPress={() => hapticLight()}
                 style={[
                   styles.cell,
                   { backgroundColor: bgColor },
-                  isToday && styles.todayCell,
-                  isFuture && styles.futureCell,
+                  isToday && { borderWidth: 2, borderColor: colors.primary },
+                  isFuture && { borderWidth: 1, borderColor: colors.border },
                 ]}
               >
-                <Text style={[styles.dayText, isToday && styles.todayText]}>
+                <Text style={[styles.dayText, { color: colors.textPrimary }, isToday && { color: colors.primary, fontWeight: 'bold' }]}>
                   {cell.day}
                 </Text>
-              </View>
+              </TouchableOpacity>
             );
           })}
         </View>
@@ -143,7 +150,6 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textSecondary,
     fontWeight: '600',
   },
   cell: {
@@ -157,21 +163,8 @@ const styles = StyleSheet.create({
     width: CELL_SIZE,
     height: CELL_SIZE,
   },
-  todayCell: {
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-  },
-  futureCell: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
   dayText: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textPrimary,
     fontWeight: '500',
-  },
-  todayText: {
-    color: COLORS.primary,
-    fontWeight: 'bold',
   },
 });

@@ -13,30 +13,37 @@ import { useTodayStats } from '@/hooks/useStatistics';
 import { TodayStats } from '@/components/stats/TodayStats';
 import { WeeklyStats } from '@/components/stats/WeeklyStats';
 import { MonthlyStats } from '@/components/stats/MonthlyStats';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
+import { hapticLight } from '@/utils/haptics';
+import Animated from 'react-native-reanimated';
+import { useTabTransition } from '@/hooks/useTabTransition';
 
 type TabKey = '오늘' | '주간' | '월간';
 const TABS: TabKey[] = ['오늘', '주간', '월간'];
 
 export default function StatsScreen() {
+  const colors = useThemeColors();
   const [activeTab, setActiveTab] = useState<TabKey>('오늘');
+  const tabEntering = useTabTransition();
   const { user } = useAuthStore();
   const { userDoc } = useUserDocument(user?.uid);
   const { stats, isLoading } = useTodayStats(user?.uid);
 
   const handleTabPress = useCallback((tab: TabKey) => {
+    hapticLight();
     setActiveTab(tab);
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* 헤더 */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.headerTop}>
-          <Text style={styles.title}>통계</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>통계</Text>
           {/* 스트릭 표시 */}
-          <View style={styles.streakBadge}>
-            <Text style={styles.streakText}>
+          <View style={[styles.streakBadge, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+            <Text style={[styles.streakText, { color: colors.textPrimary }]}>
               🔥 {userDoc?.currentStreak ?? 0}일 연속
             </Text>
           </View>
@@ -57,15 +64,17 @@ export default function StatsScreen() {
 
       {/* 탭 콘텐츠 */}
       <View style={styles.content}>
-        {activeTab === '오늘' && (
-          <TodayStats stats={stats} isLoading={isLoading} />
-        )}
-        {activeTab === '주간' && (
-          <WeeklyStats userId={user?.uid} />
-        )}
-        {activeTab === '월간' && (
-          <MonthlyStats userId={user?.uid} />
-        )}
+        <Animated.View key={activeTab} entering={tabEntering} style={styles.content}>
+          {activeTab === '오늘' && (
+            <TodayStats stats={stats} isLoading={isLoading} />
+          )}
+          {activeTab === '주간' && (
+            <WeeklyStats userId={user?.uid} />
+          )}
+          {activeTab === '월간' && (
+            <MonthlyStats userId={user?.uid} />
+          )}
+        </Animated.View>
       </View>
     </SafeAreaView>
   );
@@ -82,14 +91,15 @@ interface TabButtonProps {
 }
 
 const TabButton = memo(function TabButton({ label, isActive, onPress }: TabButtonProps) {
+  const colors = useThemeColors();
   const handlePress = useCallback(() => onPress(label), [label, onPress]);
   return (
     <TouchableOpacity
-      style={[styles.tab, isActive && styles.tabActive]}
+      style={[styles.tab, isActive && { borderBottomColor: colors.primary }]}
       onPress={handlePress}
       activeOpacity={0.7}
     >
-      <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+      <Text style={[styles.tabText, { color: colors.textSecondary }, isActive && { color: colors.primary, fontWeight: '700' }]}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -104,12 +114,9 @@ const TabButton = memo(function TabButton({ label, isActive, onPress }: TabButto
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
   },
   header: {
-    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
     paddingBottom: 0,
   },
   headerTop: {
@@ -121,19 +128,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZE.xl,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
   },
   streakBadge: {
-    backgroundColor: COLORS.bg,
     borderRadius: BORDER_RADIUS.sm,
     paddingHorizontal: SPACING.sm,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   streakText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textPrimary,
     fontWeight: '600',
   },
   tabBar: {
@@ -147,17 +150,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
-  tabActive: {
-    borderBottomColor: COLORS.primary,
-  },
   tabText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
     fontWeight: '500',
-  },
-  tabTextActive: {
-    color: COLORS.primary,
-    fontWeight: '700',
   },
   content: {
     flex: 1,

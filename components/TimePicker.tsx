@@ -8,7 +8,8 @@ import {
   StyleSheet,
   ListRenderItemInfo,
 } from 'react-native';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 
 interface TimePickerProps {
   value: string;           // "HH:mm"
@@ -23,6 +24,7 @@ const MINUTES = [0, 15, 30, 45];
 const ITEM_HEIGHT = 44;
 
 export function TimePicker({ value, onChange, label, minTime }: TimePickerProps) {
+  const colors = useThemeColors();
   const [hourStr, minuteStr] = value.split(':');
   const selectedHour = parseInt(hourStr, 10);
   const selectedMinute = parseInt(minuteStr, 10);
@@ -61,17 +63,17 @@ export function TimePicker({ value, onChange, label, minTime }: TimePickerProps)
       const isSelected = item === selectedHour;
       return (
         <TouchableOpacity
-          style={[styles.item, isSelected && styles.selectedItem]}
+          style={[styles.item, isSelected && { backgroundColor: colors.primary }]}
           onPress={() => handleHourSelect(item)}
           activeOpacity={0.7}
         >
-          <Text style={[styles.itemText, isSelected && styles.selectedItemText]}>
+          <Text style={[styles.itemText, { color: colors.textPrimary }, isSelected && { color: colors.surface, fontWeight: '700' }]}>
             {String(item).padStart(2, '0')}
           </Text>
         </TouchableOpacity>
       );
     },
-    [selectedHour, handleHourSelect],
+    [selectedHour, handleHourSelect, colors],
   );
 
   const renderMinute = useCallback(
@@ -79,26 +81,26 @@ export function TimePicker({ value, onChange, label, minTime }: TimePickerProps)
       const isSelected = item === selectedMinute;
       return (
         <TouchableOpacity
-          style={[styles.item, isSelected && styles.selectedItem]}
+          style={[styles.item, isSelected && { backgroundColor: colors.primary }]}
           onPress={() => handleMinuteSelect(item)}
           activeOpacity={0.7}
         >
-          <Text style={[styles.itemText, isSelected && styles.selectedItemText]}>
+          <Text style={[styles.itemText, { color: colors.textPrimary }, isSelected && { color: colors.surface, fontWeight: '700' }]}>
             {String(item).padStart(2, '0')}
           </Text>
         </TouchableOpacity>
       );
     },
-    [selectedMinute, handleMinuteSelect],
+    [selectedMinute, handleMinuteSelect, colors],
   );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
-      <View style={styles.pickerRow}>
+      <Text style={[styles.label, { color: colors.textPrimary }]}>{label}</Text>
+      <View style={[styles.pickerRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         {/* 시간 선택 */}
         <View style={styles.wheelContainer}>
-          <Text style={styles.wheelLabel}>시</Text>
+          <Text style={[styles.wheelLabel, { color: colors.textSecondary }]}>시</Text>
           <FlatList
             ref={hourListRef}
             data={HOURS}
@@ -116,11 +118,11 @@ export function TimePicker({ value, onChange, label, minTime }: TimePickerProps)
           />
         </View>
 
-        <Text style={styles.colon}>:</Text>
+        <Text style={[styles.colon, { color: colors.textPrimary }]}>:</Text>
 
         {/* 분 선택 (15분 단위) */}
         <View style={styles.wheelContainer}>
-          <Text style={styles.wheelLabel}>분</Text>
+          <Text style={[styles.wheelLabel, { color: colors.textSecondary }]}>분</Text>
           <FlatList
             ref={minuteListRef}
             data={MINUTES}
@@ -139,7 +141,7 @@ export function TimePicker({ value, onChange, label, minTime }: TimePickerProps)
       </View>
 
       {/* 현재 선택된 시간 표시 */}
-      <Text style={styles.selectedTime}>{value}</Text>
+      <Text style={[styles.selectedTime, { color: colors.primary }]}>{value}</Text>
     </View>
   );
 }
@@ -152,16 +154,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: COLORS.textPrimary,
     marginBottom: SPACING.sm,
   },
   pickerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
-    borderColor: COLORS.border,
     padding: SPACING.sm,
   },
   wheelContainer: {
@@ -169,7 +168,6 @@ const styles = StyleSheet.create({
   },
   wheelLabel: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textSecondary,
     marginBottom: SPACING.xs,
   },
   wheel: {
@@ -185,29 +183,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: BORDER_RADIUS.sm,
   },
-  selectedItem: {
-    backgroundColor: COLORS.primary,
-  },
   itemText: {
     fontSize: FONT_SIZE.lg,
-    color: COLORS.textPrimary,
     fontWeight: '400',
-  },
-  selectedItemText: {
-    color: COLORS.surface,
-    fontWeight: '700',
   },
   colon: {
     fontSize: FONT_SIZE.xl,
     fontWeight: '700',
-    color: COLORS.textPrimary,
     marginHorizontal: SPACING.sm,
     marginTop: SPACING.md,
   },
   selectedTime: {
     fontSize: FONT_SIZE.xl,
     fontWeight: '700',
-    color: COLORS.primary,
     marginTop: SPACING.sm,
   },
 });

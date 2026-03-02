@@ -1,17 +1,19 @@
 // 탭 레이아웃 — 4개 탭 (시간표/상점/통계/설정)
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 
 export default function TabLayout() {
+  const colors = useThemeColors();
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.textTertiary,
-        tabBarStyle: { backgroundColor: COLORS.surface, borderTopColor: COLORS.border },
-        headerStyle: { backgroundColor: COLORS.surface },
-        headerTintColor: COLORS.textPrimary,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textTertiary,
+        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.textPrimary,
       }}
     >
       <Tabs.Screen

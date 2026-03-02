@@ -2,7 +2,8 @@
 import React from 'react';
 import { ScrollView, TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 import { RewardCategory } from '@/types';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 
 type CategoryKey = 'all' | RewardCategory;
 
@@ -29,8 +30,9 @@ export const CategoryFilter = React.memo(function CategoryFilter({
   selectedCategory,
   onSelectCategory,
 }: CategoryFilterProps) {
+  const colors = useThemeColors();
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -41,11 +43,19 @@ export const CategoryFilter = React.memo(function CategoryFilter({
           return (
             <TouchableOpacity
               key={cat.key}
-              style={[styles.tab, isActive && styles.tabActive]}
+              style={[
+                styles.tab,
+                { backgroundColor: colors.border },
+                isActive && { backgroundColor: colors.primary },
+              ]}
               onPress={() => onSelectCategory(cat.key)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+              <Text style={[
+                styles.tabText,
+                { color: colors.textSecondary },
+                isActive && { color: colors.surface },
+              ]}>
                 {cat.label}
               </Text>
             </TouchableOpacity>
@@ -60,9 +70,7 @@ export type { CategoryKey };
 
 const styles = StyleSheet.create({
   wrapper: {
-    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   container: {
     flexDirection: 'row',
@@ -74,17 +82,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs + 2,
     borderRadius: BORDER_RADIUS.xl,
-    backgroundColor: COLORS.border,
-  },
-  tabActive: {
-    backgroundColor: COLORS.primary,
   },
   tabText: {
     fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  tabTextActive: {
-    color: COLORS.surface,
   },
 });

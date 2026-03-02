@@ -2,7 +2,8 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { COLORS, FONT_SIZE } from '@/constants/theme';
+import { FONT_SIZE } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 
 interface CircularProgressProps {
   progress: number; // 0-1
@@ -15,8 +16,10 @@ export const CircularProgress = memo(function CircularProgress({
   progress,
   size = 120,
   strokeWidth = 10,
-  color = COLORS.primary,
+  color,
 }: CircularProgressProps) {
+  const colors = useThemeColors();
+  const strokeColor = color ?? colors.primary;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const clampedProgress = Math.min(1, Math.max(0, progress));
@@ -32,7 +35,7 @@ export const CircularProgress = memo(function CircularProgress({
           cx={center}
           cy={center}
           r={radius}
-          stroke={COLORS.border}
+          stroke={colors.border}
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -41,7 +44,7 @@ export const CircularProgress = memo(function CircularProgress({
           cx={center}
           cy={center}
           r={radius}
-          stroke={color}
+          stroke={strokeColor}
           strokeWidth={strokeWidth}
           fill="none"
           strokeDasharray={`${circumference} ${circumference}`}
@@ -54,7 +57,7 @@ export const CircularProgress = memo(function CircularProgress({
       {/* 중앙 텍스트 */}
       <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
         <View style={styles.centerContent}>
-          <Text style={[styles.percentText, { fontSize: size * 0.22 }]}>
+          <Text style={[styles.percentText, { fontSize: size * 0.22, color: colors.textPrimary }]}>
             {percentage}%
           </Text>
         </View>
@@ -74,6 +77,5 @@ const styles = StyleSheet.create({
   },
   percentText: {
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
   },
 });

@@ -4,7 +4,8 @@ import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from 'react-nat
 import { CircularProgress } from './CircularProgress';
 import { CategoryBreakdown } from './CategoryBreakdown';
 import { PointsSummary } from './PointsSummary';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '@/constants/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import type { TodayStats as TodayStatsData } from '@/hooks/useStatistics';
 
 interface TodayStatsProps {
@@ -13,10 +14,12 @@ interface TodayStatsProps {
 }
 
 export const TodayStats = memo(function TodayStats({ stats, isLoading }: TodayStatsProps) {
+  const colors = useThemeColors();
+
   if (isLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -24,7 +27,7 @@ export const TodayStats = memo(function TodayStats({ stats, isLoading }: TodaySt
   if (!stats) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.emptyText}>오늘 데이터가 없습니다</Text>
+        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>오늘 데이터가 없습니다</Text>
       </View>
     );
   }
@@ -36,22 +39,22 @@ export const TodayStats = memo(function TodayStats({ stats, isLoading }: TodaySt
       showsVerticalScrollIndicator={false}
     >
       {/* 달성률 원형 차트 */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>오늘 달성률</Text>
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>오늘 달성률</Text>
         <View style={styles.progressRow}>
           <CircularProgress
             progress={stats.completionRate}
             size={130}
             strokeWidth={12}
-            color={COLORS.primary}
+            color={colors.primary}
           />
           <View style={styles.progressMeta}>
-            <Text style={styles.metaLabel}>완료 블록</Text>
-            <Text style={styles.metaValue}>
+            <Text style={[styles.metaLabel, { color: colors.textSecondary }]}>완료 블록</Text>
+            <Text style={[styles.metaValue, { color: colors.textPrimary }]}>
               {stats.completedCount} / {stats.totalCount}
             </Text>
-            <Text style={[styles.metaLabel, { marginTop: SPACING.sm }]}>달성률</Text>
-            <Text style={styles.metaValue}>
+            <Text style={[styles.metaLabel, { color: colors.textSecondary, marginTop: SPACING.sm }]}>달성률</Text>
+            <Text style={[styles.metaValue, { color: colors.textPrimary }]}>
               {Math.round(stats.completionRate * 100)}%
             </Text>
           </View>
@@ -60,14 +63,14 @@ export const TodayStats = memo(function TodayStats({ stats, isLoading }: TodaySt
 
       {/* 포인트 요약 */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>포인트</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>포인트</Text>
         <PointsSummary earned={stats.pointsEarned} spent={stats.pointsSpent} />
       </View>
 
       {/* 카테고리 분류 */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>카테고리별 달성</Text>
-        <View style={styles.card}>
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>카테고리별 달성</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <CategoryBreakdown breakdown={stats.categoryBreakdown} />
         </View>
       </View>
@@ -91,20 +94,16 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textSecondary,
     textAlign: 'center',
   },
   card: {
-    backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.md,
     padding: SPACING.md,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   cardTitle: {
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: COLORS.textPrimary,
     marginBottom: SPACING.md,
   },
   progressRow: {
@@ -117,12 +116,10 @@ const styles = StyleSheet.create({
   },
   metaLabel: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textSecondary,
   },
   metaValue: {
     fontSize: FONT_SIZE.lg,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
     marginTop: 2,
   },
   section: {
@@ -131,6 +128,5 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: COLORS.textPrimary,
   },
 });

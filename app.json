@@ -6,11 +6,20 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "timequest",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
+    },
+    "backgroundColor": "#ffffff",
+    "dark": {
+      "splash": {
+        "image": "./assets/splash-icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#0f172a"
+      },
+      "backgroundColor": "#0f172a"
     },
     "ios": {
       "supportsTablet": true
@@ -31,7 +40,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-notifications"
+      "expo-notifications",
+      ["@react-native-google-signin/google-signin", { "iosUrlScheme": "com.googleusercontent.apps.YOUR_IOS_CLIENT_ID" }]
     ]
   }
 }
