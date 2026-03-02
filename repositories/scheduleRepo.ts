@@ -10,6 +10,7 @@ import {
   setDoc,
   addDoc,
   updateDoc,
+  deleteDoc,
   query,
   orderBy,
   Timestamp,
@@ -86,6 +87,96 @@ export class ScheduleRepository {
       batch.set(docRef, block);
     }
     await batch.commit();
+  }
+
+  /** 템플릿 이름/isDefault 부분 업데이트 */
+  async updateTemplate(templateId: string, data: Partial<Pick<ScheduleTemplate, 'name' | 'isDefault'>>): Promise<void> {
+    const ref = doc(db, 'users', this.userId, 'templates', templateId);
+    await updateDoc(ref, { ...data, updatedAt: Timestamp.now() });
+  }
+
+  /** 템플릿과 하위 블록 전체 삭제 (writeBatch) */
+  async deleteTemplate(templateId: string): Promise<void> {
+    const blocksRef = collection(db, 'users', this.userId, 'templates', templateId, 'blocks');
+    const blocksSnap = await getDocs(blocksRef);
+    const batch = writeBatch(db);
+    for (const blockDoc of blocksSnap.docs) {
+      batch.delete(blockDoc.ref);
+    }
+    const templateRef = doc(db, 'users', this.userId, 'templates', templateId);
+    batch.delete(templateRef);
+    await batch.commit();
+  }
+
+  /** 템플릿 복제 — 이름에 " (복사본)" 추가, 블록 전체 복사 → 새 templateId 반환 */
+  async duplicateTemplate(sourceTemplateId: string): Promise<string> {
+    const sourceRef = doc(db, 'users', this.userId, 'templates', sourceTemplateId);
+    const sourceSnap = await getDoc(sourceRef);
+    if (!sourceSnap.exists()) throw new Error(`템플릿 ${sourceTemplateId}이 존재하지 않습니다`);
+
+    const sourceData = sourceSnap.data();
+    const blocksRef = collection(db, 'users', this.userId, 'templates', sourceTemplateId, 'blocks');
+    const blocksSnap = await getDocs(blocksRef);
+
+    const batch = writeBatch(db);
+    const now = Timestamp.now();
+
+    const newTemplateRef = doc(collection(db, 'users', this.userId, 'templates'));
+    batch.set(newTemplateRef, {
+      name: `${sourceData['name']} (복사본)`,
+      isDefault: false,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const newBlocksColRef = collection(db, 'users', this.userId, 'templates', newTemplateRef.id, 'blocks');
+    for (const blockDoc of blocksSnap.docs) {
+      const newBlockRef = doc(newBlocksColRef);
+      batch.set(newBlockRef, blockDoc.data());
+    }
+
+    await batch.commit();
+    return newTemplateRef.id;
+  }
+
+  /** 블록 부분 업데이트 */
+  async updateBlock(templateId: string, blockId: string, data: Partial<Omit<TimeBlock, 'id'>>): Promise<void> {
+    const ref = doc(db, 'users', this.userId, 'templates', templateId, 'blocks', blockId);
+    await updateDoc(ref, data as Record<string, unknown>);
+  }
+
+  /** 블록 삭제 */
+  async deleteBlock(templateId: string, blockId: string): Promise<void> {
+    const ref = doc(db, 'users', this.userId, 'templates', templateId, 'blocks', blockId);
+    await deleteDoc(ref);
+  }
+
+  /** 블록 정렬 순서 일괄 업데이트 (writeBatch) */
+  async updateBlocksSortOrder(templateId: string, orderedBlockIds: string[]): Promise<void> {
+    const batch = writeBatch(db);
+    orderedBlockIds.forEach((blockId, index) => {
+      const ref = doc(db, 'users', this.userId, 'templates', templateId, 'blocks', blockId);
+      batch.update(ref, { sortOrder: index });
+    });
+    await batch.commit();
+  }
+
+  /** 템플릿 목록 실시간 구독 (createdAt 오름차순) */
+  subscribeToTemplates(callback: (templates: ScheduleTemplate[]) => void): Unsubscribe {
+    const ref = collection(db, 'users', this.userId, 'templates');
+    const q = query(ref, orderBy('createdAt', 'asc'));
+    return onSnapshot(q, (snap) => {
+      callback(snap.docs.map((d) => toScheduleTemplate(d.id, d.data())));
+    });
+  }
+
+  /** 블록 목록 실시간 구독 (sortOrder 오름차순) */
+  subscribeToBlocks(templateId: string, callback: (blocks: TimeBlock[]) => void): Unsubscribe {
+    const ref = collection(db, 'users', this.userId, 'templates', templateId, 'blocks');
+    const q = query(ref, orderBy('sortOrder', 'asc'));
+    return onSnapshot(q, (snap) => {
+      callback(snap.docs.map((d) => toTimeBlock(d.id, d.data())));
+    });
   }
 
   // ─────────────────────────────────────────────

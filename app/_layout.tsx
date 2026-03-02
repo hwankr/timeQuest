@@ -4,6 +4,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { UserRepository } from '@/repositories/userRepo';
 import { View, ActivityIndicator } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { COLORS } from '@/constants/theme';
 
 export default function RootLayout() {
@@ -68,11 +69,13 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="auth" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="schedule" />
-      <Stack.Screen name="onboarding" />
-    </Stack>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="auth" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="schedule" />
+        <Stack.Screen name="onboarding" />
+      </Stack>
+    </GestureHandlerRootView>
   );
 }
