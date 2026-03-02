@@ -96,6 +96,9 @@ export interface UserDocument {
   /** 스트릭 계산용 마지막 활성 날짜 — "2026-03-01" 형식 */
   lastActiveDate: string;
 
+  /** 온보딩 완료 여부 — writeBatch의 마지막 쓰기로 true 설정 */
+  onboardingComplete: boolean;
+
   // 설정
   settings: UserSettings;
 }
@@ -185,18 +188,22 @@ export interface BlockCompletion {
   startTime: string;
   /** 비정규화 — 종료 시각 */
   endTime: string;
+  /** 비정규화 — 블록 기본 포인트 (커스텀 값 포함) */
+  basePoints: number;
   completed: boolean;
   completedAt: Timestamp | null;
   pointsEarned: number;
   bonusPoints: number;
   skipped: boolean;
   note?: string;
+  converted?: boolean;
 }
 
 /**
  * 보상 구매 기록 — users/{userId}/dailyRecords/{date}/purchases/{purchaseId}
  */
 export interface RewardPurchase {
+  id: string;
   rewardId: string;
   /** 비정규화 — 보상 이름 */
   rewardName: string;
